@@ -2,10 +2,12 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import API from '../api/axios';
+import { useRouter } from 'expo-router';
 
 export const AuthContext = createContext({} as any);
 
 export const AuthProvider = ({ children }: any) => {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -15,6 +17,8 @@ export const AuthProvider = ({ children }: any) => {
       setUser(res.data.user);
       setToken(res.data.token);
       await AsyncStorage.setItem('userToken', res.data.token);
+
+      router.replace('/home'); // Redirigir a la pantalla de inicio después de iniciar sesión
     } catch (err) {
       Alert.alert('Error', 'Credenciales inválidas');
     }
