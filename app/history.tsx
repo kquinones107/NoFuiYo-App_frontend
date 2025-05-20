@@ -4,6 +4,7 @@ import { Text, Card, Avatar, ActivityIndicator } from 'react-native-paper';
 import { AuthContext } from '../src/context/AuthContext';
 import API from '../src/api/axios';
 import Colors from '../src/constants/Colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface HistoryItem {
   _id: string;
@@ -49,7 +50,7 @@ export default function HistoryScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text variant="headlineSmall" style={styles.title}>📋 Historial de Tareas</Text>
 
       {loading ? (
@@ -61,7 +62,7 @@ export default function HistoryScreen() {
           renderItem={renderItem}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,48 +1,84 @@
-import React, { useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { Text, Card, Button, ActivityIndicator } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { AuthContext } from '../src/context/AuthContext';
 import Colors from '../src/constants/Colors';
-import { useRouter } from 'expo-router';
+import API from '../src/api/axios';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+type Home = {
+  _id: string;
+  name: string;
+  createdAt: string;
+  // agrega aquí otras propiedades si las hay
+};
 
 export default function HomeScreen() {
-  const { user, logout } = useContext(AuthContext);
   const router = useRouter();
+  const { token } = useContext(AuthContext);
+  const [homes, setHomes] = useState<Home[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHomes = async () => {
+      try {
+        const res = await API.get('/home/mis-hogares', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setHomes(res.data.homes);
+      } catch (err) {
+        console.error('Error al cargar hogares:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomes();
+  }, []);
+
+  const handleCreateHome = () => {
+    router.push('/home-setup'); // o directamente abrir un modal si lo prefieres
+  };
+
+  const renderItem = ({ item }: any) => (
+    <Card style={styles.card}>
+      <Card.Title title={`🏡 ${item.name}`} subtitle={`Miembro desde: ${new Date(item.createdAt).toLocaleDateString()}`} />
+      <Card.Actions>
+        <Button onPress={() => router.push(`/tasks?homeId=${item._id}`)}>Ver tareas</Button>
+
+        <Button
+          mode="outlined"
+          onPress={() => router.push('/history')}
+        >
+        Ver historial
+        </Button>
+      </Card.Actions>
+    </Card>
+  );
+
+  if (loading) {
+    return <ActivityIndicator animating color={Colors.button} style={{ marginTop: 50 }} />;
+  }
 
   return (
-    <View style={styles.container}>
-      <Text variant="headlineSmall" style={styles.title}>
-        ¡Hola {user?.name || 'Usuario'}! 👋
-      </Text>
+    <SafeAreaView style={styles.container}>
+      <Text variant="titleLarge" style={styles.title}>Hola Kevin! 👋</Text>
+      <Text style={styles.subtitle}>Tus hogares activos:</Text>
 
-      <Text style={styles.subtitle}>
-        Bienvenido a tu casa en orden 🧹
-      </Text>
+      {homes.length < 5 && (
+        <Card style={[styles.card, styles.createCard]} onPress={handleCreateHome}>
+          <Card.Title title="➕ Crear nuevo hogar" />
+        </Card>
+      )}
 
-      <Button
-        mode="contained"
-        onPress={() => router.push('/tasks')}
-        style={styles.button}
-      >
-        Ver Tareas
-      </Button>
-
-      <Button
-        mode="outlined"
-        onPress={() => router.push('/history')}
-        style={styles.outlined}
-      >
-        Ver Historial
-      </Button>
-
-      <Button
-        mode="text"
-        onPress={logout}
-        style={styles.logout}
-      >
-        Cerrar Sesión
-      </Button>
-    </View>
+      <FlatList
+        data={homes}
+        renderItem={renderItem}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={{ paddingBottom: 50 }}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -50,32 +86,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
+    padding: 20,
   },
   title: {
-    color: Colors.textDark,
-    marginBottom: 10,
     textAlign: 'center',
+    marginBottom: 5,
+    color: Colors.textDark,
   },
   subtitle: {
-    color: Colors.grayMedium,
-    marginBottom: 30,
     textAlign: 'center',
+    marginBottom: 15,
+    color: Colors.textDark,
   },
-  button: {
-    backgroundColor: Colors.button,
-    marginBottom: 10,
-    width: '100%',
+  card: {
+    marginBottom: 15,
+    backgroundColor: Colors.background,
   },
-  outlined: {
-    borderColor: Colors.button,
-    width: '100%',
-    marginBottom: 20,
-  },
-  logout: {
-    width: '100%',
-    marginTop: 10,
+  createCard: {
+    borderStyle: 'dashed',
+    borderColor: Colors.grayMedium,
+    borderWidth: 1,
   },
 });

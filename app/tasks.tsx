@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import Colors from '../src/constants/Colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Task {
   _id: string;
@@ -47,6 +48,7 @@ export default function TasksScreen() {
         subtitle={`Responsable: ${item.assignedTo?.name || 'Sin asignar'}`}
         left={(props) => <Avatar.Icon {...props} icon="checkbox-marked-outline" />}
       />
+      
       <Card.Actions>
         <Button
           mode="contained"
@@ -58,8 +60,9 @@ export default function TasksScreen() {
     </Card>
   );
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
         <Text variant="headlineMedium" style={styles.title}> 🧼 Tus Tareas</Text>
+        
 
         {loading ? (
             <ActivityIndicator animating color={Colors.button}/>   
@@ -72,7 +75,15 @@ export default function TasksScreen() {
                 keyExtractor={(item) => item._id}
                 />
         )}
-    </View>
+        <Button
+        icon="plus"
+        mode="outlined"
+        onPress={() => router.push('/tasks/assign')}
+        style={{ marginBottom: 15 }}
+        >
+        Asignar nueva tarea
+        </Button>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
