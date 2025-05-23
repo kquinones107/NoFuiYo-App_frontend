@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Platform } from 'react-native';
 import { Text, TextInput, Button, HelperText } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import API from '../../src/api/axios';
 import { AuthContext } from '../../src/context/AuthContext';
@@ -15,6 +16,8 @@ export default function AssignTaskScreen() {
   type Member = { _id: string; name: string };
   const [members, setMembers] = useState<Member[]>([]);
   const [assignedTo, setAssignedTo] = useState('');
+  const [dueDate, setDueDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function AssignTaskScreen() {
       setLoading(true);
       await API.post(
         '/tasks',
-        { name, assignedTo },
+        { name, assignedTo, dueDate },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       Alert.alert('Tarea asignada exitosamente');
@@ -53,6 +56,10 @@ export default function AssignTaskScreen() {
     } finally {
       setLoading(false);
     }
+  };
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) setDueDate(selectedDate);
   };
 
   return (
@@ -66,7 +73,8 @@ export default function AssignTaskScreen() {
         style={styles.input}
         mode="outlined"
       />
-      <Text style={{ marginBottom: 5, color: Colors.textDark }}>Asignar a</Text>
+
+      <Text style={styles.label}>Asignar a</Text>
       <View style={[styles.input, { paddingHorizontal: 0, paddingVertical: 0 }]}>
         <Picker
           selectedValue={assignedTo}
@@ -79,6 +87,25 @@ export default function AssignTaskScreen() {
           ))}
         </Picker>
       </View>
+
+      <Text style={styles.label}>Fecha límite</Text>
+      <Button
+        mode="outlined"
+        onPress={() => setShowDatePicker(true)}
+        style={styles.dateButton}
+      >
+        {dueDate.toLocaleDateString()}
+      </Button>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={dueDate}
+          mode="date"
+          display="default"
+          onChange={onChangeDate}
+          minimumDate={new Date()}
+        />
+      )}
 
       <Button
         mode="contained"
@@ -108,6 +135,13 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 15,
     backgroundColor: Colors.inputBackground,
+  },
+  label: {
+    marginBottom: 5,
+    color: Colors.textDark,
+  },
+  dateButton: {
+    marginBottom: 15,
   },
   button: {
     backgroundColor: Colors.button,
