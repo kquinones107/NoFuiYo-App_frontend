@@ -1,65 +1,128 @@
-import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
-import Swiper from 'react-native-swiper';
-import { Text, Button } from 'react-native-paper';
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Image, 
+  ImageBackground 
+} from 'react-native';
 import Colors from '../src/constants/Colors';
 
-export default function Onboarding() {
+export default function OnboardingScreen() {
   const router = useRouter();
 
-  return (
-    <View style={styles.container}>
-      <Swiper loop={false} showsPagination activeDotColor={Colors.button}>
-        <View style={styles.slide}>
-          <Image source={require('../assets/mock1.png')} style={styles.image} />
-          <Text style={styles.text}>Organiza los turnos de aseo fácilmente</Text>
-        </View>
-        <View style={styles.slide}>
-          <Image source={require('../assets/mock1.png')} style={styles.image} />
-          <Text style={styles.text}>Sube evidencia de las tareas realizadas</Text>
-        </View>
-        <View style={styles.slide}>
-          <Image source={require('../assets/mock1.png')} style={styles.image} />
-          <Text style={styles.text}>Todo el hogar conectado y en orden</Text>
-        </View>
-      </Swiper>
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-      <Button
-        mode="contained"
-        onPress={() => router.replace('/login')}
-        style={styles.button}
-      >
-        Empezar
-      </Button>
-    </View>
+  const onboardingData = [  
+    {
+      image: require('../assets/mock1.png'),
+      
+      buttonLabel: 'Continue',
+    },
+    {
+      image: require('../assets/mock2.png'),
+      buttonLabel: 'Continue',
+    },
+    {
+      image: require('../assets/mock3.png'),
+      buttonLabel: 'Get Started',
+    },
+  ];
+
+  const handleIndicatorPress = (index: number) => {
+    setCurrentIndex(index);
+  };
+
+  // Manejador para cambiar a la siguiente pantalla
+  const handleNext = () => {
+    if (currentIndex < onboardingData.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      router.push('/login'); // Navega a la siguiente pantalla después del último slide
+    }
+  };
+
+  const { image, buttonLabel } = onboardingData[currentIndex];
+
+  return (
+    <ImageBackground  source={image} style={styles.background} resizeMode="contain">
+      <View style={styles.contentContainer}>
+
+
+        {/* Indicadores */}
+        <View style={styles.indicatorContainer}>
+          {onboardingData.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => handleIndicatorPress(index)}
+              style={[
+                styles.indicator,
+                currentIndex === index && styles.activeIndicator,
+              ]}
+            />
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleNext}>
+          <Text style={styles.buttonText}>{buttonLabel}</Text>
+        </TouchableOpacity>
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: Colors.background,
-  },
-  slide: {
-    flex: 0.85,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
   },
-  image: {
-    width: 280,
-    height: 280,
-    resizeMode: 'contain',
-    marginBottom: 30,
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'flex-end', // Posiciona el contenido al final del fondo
+    alignItems: 'center',
+    paddingBottom: 60, // Ajusta la distancia del contenido al borde inferior
+    paddingHorizontal: 20,
   },
-  text: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: Colors.textDark,
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    textAlign: 'center', 
+    marginBottom: 10 
   },
-  button: {
-    margin: 20,
-    backgroundColor: Colors.button,
+  subtitle: { 
+    fontSize: 16, 
+    textAlign: 'center', 
+    color: '#777', 
+    marginBottom: 30 },
+  button: { 
+    backgroundColor: Colors.grayDark, 
+    padding: 15, 
+    paddingHorizontal: 80,
+    borderRadius: 22 
+  },
+  buttonText: { 
+    color: '#fff', 
+    fontSize: 16,
+    fontWeight: 'bold' 
+  },
+  indicatorContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 20 
+  },
+  indicator: { 
+    width: 20, 
+    height: 10, 
+    borderRadius: 5, 
+    backgroundColor: '#ccc', 
+    marginHorizontal: 5 
+  },
+  activeIndicator: { 
+    backgroundColor: Colors.grayDark, 
+    width: 50,
+    height: 10,
+
   },
 });
