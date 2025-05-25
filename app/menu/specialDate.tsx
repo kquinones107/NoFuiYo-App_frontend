@@ -1,25 +1,51 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, TextInput, Button, IconButton } from 'react-native-paper';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, Card, TextInput, Button } from 'react-native-paper';
 import Colors from '../../src/constants/Colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { AuthContext } from '../../src/context/AuthContext';
+import API from '../../src/api/axios';
 
 export default function SpecialDatesScreen() {
-  const [dates, setDates] = useState([
-    { title: 'Cumpleaños Kevin', date: '2025-06-20' },
-    { title: 'Día de la Madre', date: '2025-05-11' },
-    { title: 'Amor y Amistad', date: '2025-09-20' },
-  ]);
+  const { token } = useContext(AuthContext);
+  type SpecialDate = { title: string; date: string };
+  const [dates, setDates] = useState<SpecialDate[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
 
-  const addDate = () => {
+  useEffect(() => {
+    const fetchDates = async () => {
+      try {
+        const res = await API.get('/dates', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDates(res.data.dates);
+      } catch (err) {
+        console.error('Error al cargar fechas', err);
+        Alert.alert('Error', 'No se pudieron cargar las fechas especiales');
+      }
+    };
+
+    fetchDates();
+  }, []);
+
+  const addDate = async () => {
     if (!newTitle.trim()) return;
     const iso = newDate.toISOString().split('T')[0];
-    setDates([...dates, { title: newTitle, date: iso }]);
-    setNewTitle('');
+    try {
+      const res = await API.post(
+        '/dates',
+        { title: newTitle, date: iso },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setDates([...dates, res.data.date]);
+      setNewTitle('');
+    } catch (err) {
+      console.error('Error al agregar fecha', err);
+      Alert.alert('Error', 'No se pudo guardar la nueva fecha');
+    }
   };
 
   return (
