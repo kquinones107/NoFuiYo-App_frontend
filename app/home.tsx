@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, StyleSheet, FlatList, Dimensions, ScrollView,  } from 'react-native';
-import { Text, Card, Button, ActivityIndicator, Avatar } from 'react-native-paper';
+import { Text, Card, Button, ActivityIndicator, Avatar, IconButton, Menu  } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { AuthContext } from '../src/context/AuthContext';
 import Colors from '../src/constants/Colors';
@@ -24,6 +24,10 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [menuVisible, setMenuVisible] = useState(false);
+  const openMenu = () => setMenuVisible(true);
+  const closeMenu = () => setMenuVisible(false);
 
   useEffect(() => {
     const fetchHomes = async () => {
@@ -96,8 +100,28 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text variant="titleLarge" style={styles.title}>Hola {user?.name}! 👋</Text>
-      
+
+      <Menu
+          visible={menuVisible}
+          onDismiss={closeMenu}
+          anchor={
+            <IconButton
+              icon="dots-vertical"
+              size={24}
+              onPress={openMenu}
+            />
+          }
+        >
+          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
+          <Menu.Item onPress={() => {}} title="✏️ Editar perfil" />
+          <Menu.Item onPress={() => {}} title="📄 Acerca de la app" />
+          <Menu.Item onPress={() => {}} title="🔒 Políticas de privacidad" />
+          <Menu.Item onPress={() => {}} title="🎉 Fechas especiales" />
+          <Menu.Item onPress={() => {}} title="🚪 Cerrar sesión" />
+        </Menu>
+      </View>
 
       {homes.length < 5 && (
         <Card style={[styles.card, styles.createCard]} onPress={handleCreateHome}>
