@@ -97,7 +97,7 @@ const filteredData = history.filter((item) => {
         onPress={() => setFilter('late')}
         style={styles.filterButton}
       >
-        Tarde
+        Vencidas
       </Button>
     </View>
 

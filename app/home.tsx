@@ -19,7 +19,7 @@ type Home = {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { token, user } = useContext(AuthContext);
+  const { token, user, logout } = useContext(AuthContext);
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
@@ -115,11 +115,18 @@ export default function HomeScreen() {
           }
         >
           <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
-          <Menu.Item onPress={() => {}} title="✏️ Editar perfil" />
-          <Menu.Item onPress={() => {}} title="📄 Acerca de la app" />
-          <Menu.Item onPress={() => {}} title="🔒 Políticas de privacidad" />
-          <Menu.Item onPress={() => {}} title="🎉 Fechas especiales" />
-          <Menu.Item onPress={() => {}} title="🚪 Cerrar sesión" />
+          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/editProfile'); }} title="✏️ Editar perfil" />
+          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/aboutApp'); }} title="📄 Acerca de la app" />
+          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/privacyPolicy');}} title="🔒 Políticas de privacidad" />
+          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/specialDate');}} title="🎉 Fechas especiales" />
+          <Menu.Item
+           onPress={() => {
+           closeMenu();
+           logout(); // Cierra la sesión
+           router.replace('/login'); // Redirige a la pantalla principal o login
+          }}
+          title="🚪 Cerrar sesión"
+          />
         </Menu>
       </View>
 
