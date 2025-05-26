@@ -45,7 +45,7 @@ export default function AssignTaskScreen() {
       setLoading(true);
       await API.post(
         '/tasks',
-        { name, assignedTo, dueDate },
+        { name, assignedTo, dueDate: dueDate.toISOString() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       Alert.alert('Tarea asignada exitosamente');

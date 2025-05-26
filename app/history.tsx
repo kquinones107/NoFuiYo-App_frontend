@@ -49,6 +49,7 @@ const filteredData = history.filter((item) => {
   }, []);
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
+    
     <Card style={styles.card}>
   <Card.Title
     title={item.task.name}

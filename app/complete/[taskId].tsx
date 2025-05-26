@@ -52,7 +52,7 @@ export default function CompleteTaskScreen() {
       } as any);
 
       // 2. Subir imagen
-      const uploadRes = await axios.post('http://192.168.1.4:5000/api/upload', formData, {
+      const uploadRes = await axios.post('https://nofuiyoapp-backend.onrender.com/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -62,7 +62,7 @@ export default function CompleteTaskScreen() {
 
       // 3. Completar tarea
       await axios.post(
-        `http://192.168.1.4:5000/api/history/${taskId}/complete`,
+        `https://nofuiyoapp-backend.onrender.com/api/history/${taskId}/complete`,
         { photoUrl: imageUrl },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -70,7 +70,7 @@ export default function CompleteTaskScreen() {
       );
 
       Alert.alert('✅ Tarea registrada');
-      router.replace('/home');
+      router.replace('/tasks'); // Redirigir a la lista de tareas
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'No se pudo completar la tarea');

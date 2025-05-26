@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { Text, Card, Button, ActivityIndicator, Avatar } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import Colors from '../src/constants/Colors';
@@ -10,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface Task {
   _id: string;
   name: string;
+  dueDate: string;
   assignedTo: {
     name: string;
     email: string;
@@ -37,28 +39,40 @@ export default function TasksScreen() {
             setLoading(false);
         }
     };
-    useEffect(() => {
-        fetchTasks();
-    }, []);
 
-    const renderItem = ({ item }: { item: Task }) => (
-    <Card style={styles.card}>
-      <Card.Title
-        title={item.name}
-        subtitle={`Responsable: ${item.assignedTo?.name || 'Sin asignar'}`}
-        left={(props) => <Avatar.Icon {...props} icon="checkbox-marked-outline" />}
-      />
-      
-      <Card.Actions>
-        <Button
-          mode="contained"
-          onPress={() => router.push(`/complete/${item._id}` as const)}
-        >
-          Marcar como hecha
-        </Button>
-      </Card.Actions>
-    </Card>
-  );
+    useFocusEffect(
+        useCallback(() => {
+            fetchTasks();
+        }, [])
+    );
+
+  
+
+  const renderItem = ({ item }: { item: Task }) => {
+    const isLate = new Date(item.dueDate) < new Date();
+    return (
+      <Card style={styles.card}>
+        <Card.Title
+          title={item.name}
+          subtitle={`Responsable: ${item.assignedTo?.name || 'Sin asignar'}`}
+          left={(props) => <Avatar.Icon {...props} icon="checkbox-marked-outline" />}
+        />
+        <Card.Content>
+          <Text style={{ color: isLate ? 'red' : Colors.textDark }}>
+            📅 Fecha límite: {new Date(item.dueDate).toLocaleDateString()}
+          </Text>
+        </Card.Content>
+        <Card.Actions>
+          <Button
+            mode="contained"
+            onPress={() => router.push(`/complete/${item._id}` as const)}
+          >
+            Marcar como hecha
+          </Button>
+        </Card.Actions>
+      </Card>
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
         <Text variant="headlineMedium" style={styles.title}> 🧼 Tus Tareas</Text>

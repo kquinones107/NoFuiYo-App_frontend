@@ -4,8 +4,7 @@ import {
   View, 
   Text, 
   TouchableOpacity, 
-  StyleSheet, 
-  Image, 
+  StyleSheet,  
   ImageBackground 
 } from 'react-native';
 import Colors from '../src/constants/Colors';
