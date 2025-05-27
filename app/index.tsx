@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { 
   View, 
@@ -8,11 +8,15 @@ import {
   ImageBackground 
 } from 'react-native';
 import Colors from '../src/constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../src/context/AuthContext';
+import { useContext } from 'react';
 
 export default function OnboardingScreen() {
   const router = useRouter();
-
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [checking, setChecking] = useState(true);
+  const { token } = useContext(AuthContext);
 
   const onboardingData = [  
     {
@@ -30,16 +34,35 @@ export default function OnboardingScreen() {
     },
   ];
 
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const onboarded = await AsyncStorage.getItem('hasOnboarded');
+
+      if (!onboarded) {
+        router.replace('/onboarding');
+      } else if (token) {
+        router.replace('/home');
+      } else {
+        router.replace('/login');
+      }
+
+      setChecking(false);
+    };
+
+    checkOnboarding();
+  }, [token]);
+
   const handleIndicatorPress = (index: number) => {
     setCurrentIndex(index);
   };
 
   // Manejador para cambiar a la siguiente pantalla
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      router.push('/login'); // Navega a la siguiente pantalla después del último slide
+      await AsyncStorage.setItem('hasOnboarded', 'true');
+      router.replace('/login'); // Navega a la siguiente pantalla después del último slide
     }
   };
 

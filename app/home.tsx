@@ -81,7 +81,14 @@ export default function HomeScreen() {
   const renderItem = ({ item }: any) => (
     <Card style={styles.card}>
       <Card.Title title={`🏡 ${item.name}`} subtitle={`Miembro desde: ${new Date(item.createdAt).toLocaleDateString()}`} />
+      <IconButton
+        icon="information-outline"
+        size={20}
+        onPress={() => router.push('/homeDetails')}
+        style={{ position: 'absolute', top: 5, right: 5 }}
+        />
       <Card.Actions>
+        
         <Button onPress={() => router.push(`/tasks?homeId=${item._id}`)}>Ver tareas</Button>
 
         <Button

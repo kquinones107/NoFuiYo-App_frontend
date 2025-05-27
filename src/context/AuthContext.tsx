@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }: any) => {
       setUser(res.data.user);
       setToken(res.data.token);
       await AsyncStorage.setItem('userToken', res.data.token);
+      await AsyncStorage.setItem('userData', JSON.stringify(res.data.user));
 
       router.replace('/home'); // Redirigir a la pantalla de inicio después de iniciar sesión
     } catch (err) {
@@ -40,12 +41,18 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const loadToken = async () => {
+  try {
     const savedToken = await AsyncStorage.getItem('userToken');
-    if (savedToken) {
+    const savedUser = await AsyncStorage.getItem('userData');
+
+    if (savedToken && savedUser) {
       setToken(savedToken);
-      // podrías validar o cargar user aquí si lo necesitas
+      setUser(JSON.parse(savedUser));
     }
-  };
+  } catch (err) {
+    console.error('Error cargando sesión:', err);
+  }
+};
 
   useEffect(() => {
     loadToken();
