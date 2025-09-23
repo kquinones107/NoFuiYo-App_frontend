@@ -1,13 +1,13 @@
-import React, { useState, useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
 import { router } from 'expo-router';
-import { AuthContext } from '../src/context/AuthContext';
+import React, { useContext, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text, TextInput } from 'react-native-paper';
 import Colors from '../src/constants/Colors';
+import { AuthContext } from '../src/context/AuthContext';
 
 export default function LoginScreen() {
   
-  const { login } = useContext(AuthContext);
+  const { login, isLoading } = useContext(AuthContext);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,8 +33,14 @@ export default function LoginScreen() {
         style={styles.input}
       />
 
-      <Button mode="contained" onPress={() => login(email, password)} style={styles.button}>
-        Entrar
+      <Button 
+        mode="contained" 
+        onPress={() => login(email, password)} 
+        style={styles.button}
+        disabled={isLoading}
+        loading={isLoading}
+      >
+        {isLoading ? 'Entrando...' : 'Entrar'}
       </Button>
 
       <Text style={styles.link} onPress={() => router.push('/register')}>

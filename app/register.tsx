@@ -1,13 +1,13 @@
-import React, { useState, useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { AuthContext } from '../src/context/AuthContext';
+import React, { useContext, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text, TextInput } from 'react-native-paper';
 import Colors from '../src/constants/Colors';
+import { AuthContext } from '../src/context/AuthContext';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register } = useContext(AuthContext);
+  const { register, isLoading } = useContext(AuthContext);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,8 +42,14 @@ export default function RegisterScreen() {
         style={styles.input}
       />
 
-      <Button mode="contained" onPress={() => register(name, email, password)} style={styles.button}>
-        Registrarse
+      <Button 
+        mode="contained" 
+        onPress={() => register(name, email, password)} 
+        style={styles.button}
+        disabled={isLoading}
+        loading={isLoading}
+      >
+        {isLoading ? 'Creando cuenta...' : 'Registrarse'}
       </Button>
 
       <Text style={styles.link} onPress={() => router.push('/login')}>
