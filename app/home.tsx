@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { View, StyleSheet, FlatList, Dimensions, ScrollView,  } from 'react-native';
-import { Text, Card, Button, ActivityIndicator, Avatar, IconButton, Menu  } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { AuthContext } from '../src/context/AuthContext';
-import Colors from '../src/constants/Colors';
-import API from '../src/api/axios';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useContext, useEffect, useState } from 'react';
+import { Dimensions, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
+import { ActivityIndicator, Avatar, Button, Card, Chip, IconButton, Menu, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import API from '../src/api/axios';
+import { AuthContext } from '../src/context/AuthContext';
+import { useTheme } from '../src/context/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -20,6 +21,7 @@ type Home = {
 export default function HomeScreen() {
   const router = useRouter();
   const { token, user, logout } = useContext(AuthContext);
+  const { colors, toggleTheme, isDark } = useTheme();
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
@@ -44,7 +46,7 @@ export default function HomeScreen() {
     };
 
     fetchHomes();
-  }, []);
+  }, [token]);
 
   const handleCreateHome = () => {
     router.push('/home-setup'); // o directamente abrir un modal si lo prefieres
@@ -65,7 +67,7 @@ export default function HomeScreen() {
     };
 
     fetchStats();
-  }, []);
+  }, [token]);
 
   const chartData = {
     labels: stats.map((s) => s.name),
@@ -79,120 +81,207 @@ export default function HomeScreen() {
   const winner = stats.length > 0 ? stats[0] : null;
 
   const renderItem = ({ item }: any) => (
-    <Card style={styles.card}>
-      <Card.Title title={`🏡 ${item.name}`} subtitle={`Miembro desde: ${new Date(item.createdAt).toLocaleDateString()}`} />
-      <IconButton
-        icon="information-outline"
-        size={20}
-        onPress={() => router.push('/homeDetails')}
-        style={{ position: 'absolute', top: 5, right: 5 }}
-        />
-      <Card.Actions>
+    <Card style={[styles.homeCard, { backgroundColor: colors.cardBackground }]} elevation={2}>
+      <Card.Content style={styles.homeCardContent}>
+        <View style={styles.homeCardHeader}>
+          <View style={styles.homeInfo}>
+            <Text variant="headlineSmall" style={[styles.homeName, { color: colors.textPrimary }]}>
+              🏡 {item.name}
+            </Text>
+            <Text variant="bodyMedium" style={[styles.homeSubtitle, { color: colors.textSecondary }]}>
+              Miembro desde: {new Date(item.createdAt).toLocaleDateString()}
+            </Text>
+          </View>
+          <IconButton
+            icon="information-outline"
+            size={20}
+            onPress={() => router.push('/homeDetails')}
+            iconColor={colors.primary}
+          />
+        </View>
         
-        <Button onPress={() => router.push(`/tasks?homeId=${item._id}`)}>Ver tareas</Button>
+        <View style={styles.homeActions}>
+          <Button 
+            mode="contained" 
+            onPress={() => router.push(`/tasks?homeId=${item._id}`)}
+            style={[styles.actionButton, { backgroundColor: colors.primary }]}
+            contentStyle={styles.actionButtonContent}
+          >
+            Ver tareas
+          </Button>
 
-        <Button
-          mode="outlined"
-          onPress={() => router.push('/history')}
-        >
-        Ver historial
-        </Button>
-      </Card.Actions>
+          <Button
+            mode="outlined"
+            onPress={() => router.push('/history')}
+            style={[styles.secondaryActionButton, { borderColor: colors.primary }]}
+            contentStyle={styles.actionButtonContent}
+          >
+            Ver historial
+          </Button>
+        </View>
+      </Card.Content>
     </Card>
   );
 
   if (loading) {
-    return <ActivityIndicator animating color={Colors.button} style={{ marginTop: 50 }} />;
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator animating color={colors.primary} style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Text variant="titleLarge" style={styles.title}>Hola {user?.name}! 👋</Text>
-
-      <Menu
-          visible={menuVisible}
-          onDismiss={closeMenu}
-          anchor={
-            <IconButton
-              icon="dots-vertical"
-              size={24}
-              onPress={openMenu}
-            />
-          }
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header with gradient */}
+        <LinearGradient
+          colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
+          style={styles.header}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
         >
-          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
-          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/editProfile'); }} title="✏️ Editar perfil" />
-          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/aboutApp'); }} title="📄 Acerca de la app" />
-          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/privacyPolicy');}} title="🔒 Políticas de privacidad" />
-          <Menu.Item onPress={() => {closeMenu(); router.push('/menu/specialDate');}} title="🎉 Fechas especiales" />
-          <Menu.Item
-           onPress={() => {
-           closeMenu();
-           logout(); // Cierra la sesión
-           router.replace('/login'); // Redirige a la pantalla principal o login
-          }}
-          title="🚪 Cerrar sesión"
-          />
-        </Menu>
-      </View>
-
-      {homes.length < 5 && (
-        <Card style={[styles.card, styles.createCard]} onPress={handleCreateHome}>
-          <Card.Title title="➕ Crear nuevo hogar" />
-        </Card>
-      )}
-      <View style={styles.section}>
-      <Text style={styles.subtitle}>Tus hogares activos:</Text>
-
-      <FlatList
-        data={homes}
-        renderItem={renderItem}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={{ paddingBottom: 50 }}
-      />
-      </View>
-     
-      <ScrollView style={styles.section2}>
-      <Text style={styles.title}>Estadísticas del Mes</Text>
-
-      {loading ? (
-        <ActivityIndicator animating color={Colors.button} style={{ marginTop: 20 }} />
-      ) : (
-        <>
-          <BarChart
-            data={chartData}
-            width={screenWidth - 30}
-            height={220}
-            yAxisLabel=""
-            yAxisSuffix=""
-            chartConfig={{
-              backgroundColor: '#ffffff',
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(75, 85, 99, ${opacity})`,
-              labelColor: () => Colors.textDark,
-            }}
-            style={{ marginVertical: 10, borderRadius: 8, alignSelf: 'center' }}
-          />
+        <View style={styles.headerContent}>
+          <View style={styles.greetingContainer}>
+            <Text variant="headlineMedium" style={styles.greeting}>
+              ¡Hola {user?.name}! 👋
+            </Text>
+            <Text variant="bodyMedium" style={styles.greetingSubtitle}>
+              Bienvenido de vuelta a NoFuiYo
+            </Text>
+          </View>
           
-          {winner && (
-            <Card style={styles.card}>
-              <Card.Title
-                title="🏅 Integrante del Mes"
-                subtitle={winner.name}
-                left={(props) => <Avatar.Text {...props} label={winner.name.charAt(0)} />}
+          <Menu
+            visible={menuVisible}
+            onDismiss={closeMenu}
+            anchor={
+              <IconButton
+                icon="dots-vertical"
+                size={24}
+                onPress={openMenu}
+                iconColor={colors.buttonText}
               />
-              <Card.Content>
-                <Text>{`Ha obtenido ${winner.points} punto(s) neto(s) este mes.`}</Text>
-                <Text>{`Completadas: ${winner.completed}, Tarde: ${winner.late}`}</Text>
-              </Card.Content>
-            </Card>
+            }
+          >
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/editProfile'); }} title="✏️ Editar perfil" />
+            <Menu.Item onPress={() => {closeMenu(); toggleTheme(); }} title={isDark ? "☀️ Modo claro" : "🌙 Modo oscuro"} />
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/aboutApp'); }} title="📄 Acerca de la app" />
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/privacyPolicy');}} title="🔒 Políticas de privacidad" />
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/specialDate');}} title="🎉 Fechas especiales" />
+            <Menu.Item
+             onPress={() => {
+             closeMenu();
+             logout(); // Cierra la sesión
+             router.replace('/login'); // Redirige a la pantalla principal o login
+            }}
+            title="🚪 Cerrar sesión"
+            />
+          </Menu>
+        </View>
+      </LinearGradient>
+
+      <ScrollView 
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {homes.length < 5 && (
+          <Card style={[styles.createCard, { backgroundColor: colors.cardBackground, borderColor: colors.primary }]} onPress={handleCreateHome} elevation={2}>
+            <Card.Content style={styles.createCardContent}>
+              <Text variant="headlineSmall" style={[styles.createCardTitle, { color: colors.primary }]}>
+                ➕ Crear nuevo hogar
+              </Text>
+              <Text variant="bodyMedium" style={[styles.createCardSubtitle, { color: colors.textSecondary }]}>
+                Establece un nuevo hogar para tu familia
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Tus hogares activos</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+            Gestiona y organiza las tareas de tu hogar
+          </Text>
+
+          <FlatList
+            data={homes}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
+            scrollEnabled={false}
+            contentContainerStyle={styles.homesList}
+          />
+        </View>
+        <View style={styles.statsSection}>
+          <Text style={[styles.statsTitle, { color: colors.textPrimary }]}>📊 Estadísticas del Mes</Text>
+          <Text style={[styles.statsSubtitle, { color: colors.textSecondary }]}>
+            Rendimiento y logros de tu equipo
+          </Text>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator animating color={colors.primary} size="large" />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando estadísticas...</Text>
+            </View>
+          ) : (
+            <>
+              <Card style={[styles.chartCard, { backgroundColor: colors.cardBackground }]} elevation={2}>
+                <Card.Content>
+                  <BarChart
+                    data={chartData}
+                    width={screenWidth - 60}
+                    height={220}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    chartConfig={{
+                      backgroundColor: colors.cardBackground,
+                      backgroundGradientFrom: colors.cardBackground,
+                      backgroundGradientTo: colors.cardBackground,
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(255, 107, 107, ${opacity})`,
+                      labelColor: () => colors.textPrimary,
+                    }}
+                    style={{ marginVertical: 10, borderRadius: 8, alignSelf: 'center' }}
+                  />
+                </Card.Content>
+              </Card>
+              
+              {winner && (
+                <Card style={[styles.winnerCard, { backgroundColor: colors.cardBackground, borderColor: colors.highlight }]} elevation={3}>
+                  <Card.Content style={styles.winnerContent}>
+                    <View style={styles.winnerHeader}>
+                      <Avatar.Text 
+                        size={50} 
+                        label={winner.name.charAt(0)} 
+                        style={[styles.winnerAvatar, { backgroundColor: colors.highlight }]}
+                      />
+                      <View style={styles.winnerInfo}>
+                        <Text variant="headlineSmall" style={[styles.winnerTitle, { color: colors.textPrimary }]}>
+                          🏅 Integrante del Mes
+                        </Text>
+                        <Text variant="titleMedium" style={[styles.winnerName, { color: colors.primary }]}>
+                          {winner.name}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.winnerStats}>
+                      <Chip style={[styles.statChip, { backgroundColor: colors.primary }]} textStyle={styles.statChipText}>
+                        {winner.points} puntos
+                      </Chip>
+                      <Chip style={[styles.statChip, { backgroundColor: colors.primary }]} textStyle={styles.statChipText}>
+                        {winner.completed} completadas
+                      </Chip>
+                      <Chip style={[styles.statChip, { backgroundColor: colors.primary }]} textStyle={styles.statChipText}>
+                        {winner.late} tardías
+                      </Chip>
+                    </View>
+                  </Card.Content>
+                </Card>
+              )}
+            </>
           )}
-        </>
-      )}
-      </ScrollView> 
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -200,34 +289,168 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
-    padding: 20,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: 5,
-    color: Colors.textDark,
+  header: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
   },
-  subtitle: {
-    textAlign: 'center',
-    marginBottom: 15,
-    color: Colors.textDark,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  card: {
-    marginBottom: 15,
-    backgroundColor: Colors.background,
+  greetingContainer: {
+    flex: 1,
+  },
+  greeting: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  greetingSubtitle: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   createCard: {
+    margin: 20,
+    marginTop: 20,
+    borderRadius: 16,
     borderStyle: 'dashed',
-    borderColor: Colors.grayMedium,
-    borderWidth: 1,
+    borderWidth: 2,
+  },
+  createCardContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  createCardTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  createCardSubtitle: {
+    textAlign: 'center',
   },
   section: {
-  padding: 15,
-  marginBottom: -30,
-  borderRadius: 12,
-},
-  section2: {
-    marginTop: 10,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  homesList: {
+    gap: 16,
+  },
+  homeCard: {
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  homeCardContent: {
+    padding: 20,
+  },
+  homeCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  homeInfo: {
+    flex: 1,
+  },
+  homeName: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  homeSubtitle: {
+    // Color will be set dynamically
+  },
+  homeActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 12,
+  },
+  secondaryActionButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 12,
+  },
+  actionButtonContent: {
+    paddingVertical: 8,
+  },
+  statsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  statsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  statsSubtitle: {
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  chartCard: {
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  winnerCard: {
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  winnerContent: {
+    padding: 20,
+  },
+  winnerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  winnerAvatar: {
+    marginRight: 16,
+  },
+  winnerInfo: {
+    flex: 1,
+  },
+  winnerTitle: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  winnerName: {
+    fontWeight: '600',
+  },
+  winnerStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statChip: {
+    // Background color will be set dynamically
+  },
+  statChipText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });

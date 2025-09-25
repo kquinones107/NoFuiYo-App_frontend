@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }: any) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
       const res = await API.post('/auth/login', { email, password });
@@ -20,6 +20,18 @@ export const AuthProvider = ({ children }: any) => {
       setToken(res.data.token);
       await AsyncStorage.setItem('userToken', res.data.token);
       await AsyncStorage.setItem('userData', JSON.stringify(res.data.user));
+
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        await AsyncStorage.setItem('savedEmail', email);
+        await AsyncStorage.setItem('savedPassword', password);
+        await AsyncStorage.setItem('rememberMe', 'true');
+      } else {
+        // Clear saved credentials if remember me is unchecked
+        await AsyncStorage.removeItem('savedEmail');
+        await AsyncStorage.removeItem('savedPassword');
+        await AsyncStorage.removeItem('rememberMe');
+      }
 
       router.replace('/home'); // Redirigir a la pantalla de inicio después de iniciar sesión
     } catch (err) {
@@ -29,10 +41,10 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string, rememberMe: boolean = false) => {
     try {
       await API.post('/auth/register', { name, email, password });
-      await login(email, password);
+      await login(email, password, rememberMe);
     } catch (err) {
       Alert.alert('Error', 'No se pudo registrar');
     }
@@ -40,8 +52,24 @@ export const AuthProvider = ({ children }: any) => {
 
   const logout = async () => {
     await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userData');
     setUser(null);
     setToken(null);
+  };
+
+  const loadSavedCredentials = async () => {
+    try {
+      const rememberMe = await AsyncStorage.getItem('rememberMe');
+      if (rememberMe === 'true') {
+        const savedEmail = await AsyncStorage.getItem('savedEmail');
+        const savedPassword = await AsyncStorage.getItem('savedPassword');
+        return { email: savedEmail || '', password: savedPassword || '', rememberMe: true };
+      }
+      return { email: '', password: '', rememberMe: false };
+    } catch (err) {
+      console.error('Error loading saved credentials:', err);
+      return { email: '', password: '', rememberMe: false };
+    }
   };
 
   const loadToken = async () => {
@@ -63,7 +91,7 @@ export const AuthProvider = ({ children }: any) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, setUser, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, setUser, isLoading, loadSavedCredentials }}>
       {children}
     </AuthContext.Provider>
   );

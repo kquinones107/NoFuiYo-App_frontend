@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet,  
-  ImageBackground 
-} from 'react-native';
-import Colors from '../src/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { AuthContext } from '../src/context/AuthContext';
-import { useContext } from 'react';
+import { useTheme } from '../src/context/ThemeContext';
+
+const { width, height } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [checking, setChecking] = useState(true);
   const { token } = useContext(AuthContext);
+  const { colors } = useTheme();
 
   const onboardingData = [  
     {
@@ -50,7 +55,7 @@ export default function OnboardingScreen() {
     };
 
     checkOnboarding();
-  }, [token]);
+  }, [token, router]);
 
   const handleIndicatorPress = (index: number) => {
     setCurrentIndex(index);
@@ -68,11 +73,30 @@ export default function OnboardingScreen() {
 
   const { image, buttonLabel } = onboardingData[currentIndex];
 
+  if (checking) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <LinearGradient
+          colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
+          style={styles.loadingGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <ActivityIndicator size="large" color={colors.buttonText} />
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </LinearGradient>
+      </View>
+    );
+  }
+
   return (
-    <ImageBackground  source={image} style={styles.background} resizeMode="contain">
+    <ImageBackground source={image} style={[styles.background, { backgroundColor: colors.background }]} resizeMode="cover">
+      <LinearGradient
+        colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
+        style={styles.overlay}
+      />
+      
       <View style={styles.contentContainer}>
-
-
         {/* Indicadores */}
         <View style={styles.indicatorContainer}>
           {onboardingData.map((_, index) => (
@@ -88,7 +112,14 @@ export default function OnboardingScreen() {
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleNext}>
-          <Text style={styles.buttonText}>{buttonLabel}</Text>
+          <LinearGradient
+            colors={[Colors.primary, Colors.secondary]}
+            style={styles.buttonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.buttonText}>{buttonLabel}</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -96,55 +127,76 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  background: {
+  loadingContainer: {
+    flex: 1,
+  },
+  loadingGradient: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 16,
+    color: Colors.buttonText,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  background: {
+    flex: 1,
+    width: width,
+    height: height,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   contentContainer: {
     flex: 1,
-    justifyContent: 'flex-end', // Posiciona el contenido al final del fondo
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: 60, // Ajusta la distancia del contenido al borde inferior
+    paddingBottom: 60,
     paddingHorizontal: 20,
-  },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    textAlign: 'center', 
-    marginBottom: 10 
-  },
-  subtitle: { 
-    fontSize: 16, 
-    textAlign: 'center', 
-    color: '#777', 
-    marginBottom: 30 },
-  button: { 
-    backgroundColor: Colors.grayDark, 
-    padding: 15, 
-    paddingHorizontal: 80,
-    borderRadius: 22 
-  },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 16,
-    fontWeight: 'bold' 
   },
   indicatorContainer: { 
     flexDirection: 'row', 
-    marginBottom: 20 
+    marginBottom: 40,
+    justifyContent: 'center',
   },
   indicator: { 
-    width: 20, 
-    height: 10, 
-    borderRadius: 5, 
-    backgroundColor: '#ccc', 
-    marginHorizontal: 5 
+    width: 12, 
+    height: 12, 
+    borderRadius: 6, 
+    backgroundColor: 'rgba(255,255,255,0.4)', 
+    marginHorizontal: 6,
   },
   activeIndicator: { 
-    backgroundColor: Colors.grayDark, 
-    width: 50,
-    height: 10,
-
+    backgroundColor: Colors.buttonText,
+    width: 32,
+    height: 12,
+    borderRadius: 6,
+  },
+  button: {
+    width: width * 0.8,
+    height: 56,
+    borderRadius: 28,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 28,
+  },
+  buttonText: { 
+    color: Colors.buttonText, 
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

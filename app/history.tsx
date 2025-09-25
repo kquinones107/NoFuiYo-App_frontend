@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { View, Image, StyleSheet, FlatList } from 'react-native';
-import { Text, Card, Avatar, ActivityIndicator, Button } from 'react-native-paper';
-import { AuthContext } from '../src/context/AuthContext';
-import API from '../src/api/axios';
-import Colors from '../src/constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useContext, useEffect, useState } from 'react';
+import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Avatar, Card, Chip, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import API from '../src/api/axios';
+import { AuthContext } from '../src/context/AuthContext';
+import { useTheme } from '../src/context/ThemeContext';
+
+const { width } = Dimensions.get('window');
 
 interface HistoryItem {
   _id: string;
@@ -18,6 +21,7 @@ interface HistoryItem {
 
 export default function HistoryScreen() {
   const { token } = useContext(AuthContext);
+  const { colors } = useTheme();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'late' | 'ontime'>('all');
@@ -49,66 +53,103 @@ const filteredData = history.filter((item) => {
   }, []);
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    
-    <Card style={styles.card}>
-  <Card.Title
-    title={item.task.name}
-    subtitle={`Hecha por: ${item.doneBy.name} el ${formatDate(item.doneAt)}`}
-    left={(props) => (
-      <Avatar.Icon
-        {...props}
-        icon={item.late ? 'alert-circle-outline' : 'check-circle-outline'}
-        style={{
-          backgroundColor: item.late ? '#ffcdd2' : '#c8e6c9', // rojo claro o verde claro
-        }}
+    <Card style={styles.card} elevation={2}>
+      <Card.Title
+        title={item.task.name}
+        titleStyle={styles.taskTitle}
+        subtitle={`Hecha por: ${item.doneBy.name} el ${formatDate(item.doneAt)}`}
+        subtitleStyle={styles.taskSubtitle}
+        left={(props) => (
+          <Avatar.Icon
+            {...props}
+            icon={item.late ? 'alert-circle-outline' : 'check-circle-outline'}
+            style={[
+              styles.avatar,
+              {
+                backgroundColor: item.late ? Colors.error : Colors.success,
+              }
+            ]}
+          />
+        )}
+        right={() => (
+          <View style={styles.statusContainer}>
+            <Text style={[
+              styles.statusText,
+              { color: item.late ? Colors.error : Colors.success }
+            ]}>
+              {item.late ? 'Tarde' : 'A tiempo'}
+            </Text>
+          </View>
+        )}
       />
-    )}
-  />
-  {item.photoUrl && (
-    <Card.Cover source={{ uri: item.photoUrl }} style={{ marginTop: 8 }} />
-  )}
-</Card>
+      {item.photoUrl && (
+        <Card.Cover 
+          source={{ uri: item.photoUrl }} 
+          style={styles.taskImage}
+        />
+      )}
+    </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text variant="headlineSmall" style={styles.title}>📋 Historial de Tareas</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header with gradient */}
+      <LinearGradient
+        colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Text variant="headlineMedium" style={styles.title}>📋 Historial de Tareas</Text>
+        <Text variant="bodyMedium" style={styles.subtitle}>
+          Revisa todas las tareas completadas
+        </Text>
+      </LinearGradient>
 
-{loading ? (
-  <ActivityIndicator animating color={Colors.button} />
-) : (
-  <>
-    <View style={styles.filterRow}>
-      <Button
-        mode={filter === 'all' ? 'contained' : 'outlined'}
-        onPress={() => setFilter('all')}
-        style={styles.filterButton}
-      >
-        Todas
-      </Button>
-      <Button
-        mode={filter === 'ontime' ? 'contained' : 'outlined'}
-        onPress={() => setFilter('ontime')}
-        style={styles.filterButton}
-      >
-        A tiempo
-      </Button>
-      <Button
-        mode={filter === 'late' ? 'contained' : 'outlined'}
-        onPress={() => setFilter('late')}
-        style={styles.filterButton}
-      >
-        Vencidas
-      </Button>
-    </View>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator animating color={Colors.primary} size="large" />
+          <Text style={styles.loadingText}>Cargando historial...</Text>
+        </View>
+      ) : (
+        <>
+          {/* Filter chips */}
+          <View style={styles.filterContainer}>
+            <Chip
+              selected={filter === 'all'}
+              onPress={() => setFilter('all')}
+              style={[styles.chip, filter === 'all' && styles.selectedChip]}
+              textStyle={filter === 'all' ? styles.selectedChipText : styles.chipText}
+            >
+              Todas
+            </Chip>
+            <Chip
+              selected={filter === 'ontime'}
+              onPress={() => setFilter('ontime')}
+              style={[styles.chip, filter === 'ontime' && styles.selectedChip]}
+              textStyle={filter === 'ontime' ? styles.selectedChipText : styles.chipText}
+            >
+              A tiempo
+            </Chip>
+            <Chip
+              selected={filter === 'late'}
+              onPress={() => setFilter('late')}
+              style={[styles.chip, filter === 'late' && styles.selectedChip]}
+              textStyle={filter === 'late' ? styles.selectedChipText : styles.chipText}
+            >
+              Vencidas
+            </Chip>
+          </View>
 
-    <FlatList
-      data={filteredData}
-      keyExtractor={(item) => item._id}
-      renderItem={renderItem}
-    />
-  </>
-)}
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item) => item._id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -117,29 +158,88 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: 15,
+  },
+  header: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   title: {
+    color: Colors.buttonText,
+    fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: Colors.buttonText,
+    opacity: 0.9,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: Colors.textLight,
+    fontSize: 16,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 12,
+  },
+  chip: {
+    backgroundColor: Colors.grayLighter,
+    borderColor: Colors.grayLight,
+  },
+  selectedChip: {
+    backgroundColor: Colors.primary,
+  },
+  chipText: {
     color: Colors.textDark,
   },
+  selectedChipText: {
+    color: Colors.buttonText,
+    fontWeight: '600',
+  },
+  listContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
   card: {
-    marginBottom: 15,
+    marginBottom: 16,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 12,
+    elevation: 2,
   },
-  image: {
-    width: '100%',
-    height: 200,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textDark,
   },
-  filterRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-around',
-  marginBottom: 15,
-},
-filterButton: {
-  flex: 1,
-  marginHorizontal: 5,
-},
+  taskSubtitle: {
+    fontSize: 14,
+    color: Colors.textLight,
+  },
+  avatar: {
+    backgroundColor: Colors.primary,
+  },
+  statusContainer: {
+    paddingRight: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  taskImage: {
+    marginTop: 8,
+    borderRadius: 8,
+  },
 });

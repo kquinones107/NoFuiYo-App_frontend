@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "NoFuiYoApp",
-    "slug": "frontend",
+    "slug": "NoFuiYoApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kquinones107.frontend",
+      "bundleIdentifier": "com.zanacode.NoFuiYoApp",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -21,7 +21,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.kquinones107.frontend"
+      "versionCode": 1,
+      "package": "com.zanacode.NoFuiYoApp"
     },
     "web": {
       "bundler": "metro",
@@ -46,8 +47,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b8d9f0bd-5924-4296-ba4b-5bf64060ce35"
+        "projectId": "a05e057c-58a4-4037-8b22-754b4aff6754"
       }
-    }
+    },
+    "owner": "wdospinal"
   }
 }
