@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 const { width } = Dimensions.get('window');
 
