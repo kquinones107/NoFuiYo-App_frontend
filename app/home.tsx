@@ -223,6 +223,27 @@ export default function HomeScreen() {
               <ActivityIndicator animating color={colors.primary} size="large" />
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando estadísticas...</Text>
             </View>
+          ) : stats.length === 0 ? (
+            <Card style={[styles.chartCard, styles.emptyStateCard, { backgroundColor: colors.cardBackground }]} elevation={2}>
+              <Card.Content style={styles.emptyStateContent}>
+                <Text style={[styles.emptyStateIcon, { color: colors.textTertiary }]}>📊</Text>
+                <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>
+                  Sin datos aún
+                </Text>
+                <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
+                  Crea tareas en tus hogares y complétalas para ver las estadísticas del mes y el rendimiento de tu equipo aquí.
+                </Text>
+                <Button
+                  mode="contained"
+                  onPress={() => homes.length > 0 && router.push(`/tasks?homeId=${homes[0]._id}`)}
+                  style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+                  contentStyle={styles.emptyStateButtonContent}
+                  disabled={homes.length === 0}
+                >
+                  {homes.length > 0 ? 'Ir a tareas' : 'Crea un hogar primero'}
+                </Button>
+              </Card.Content>
+            </Card>
           ) : (
             <>
               <Card style={[styles.chartCard, { backgroundColor: colors.cardBackground }]} elevation={2}>
@@ -415,6 +436,37 @@ const styles = StyleSheet.create({
   chartCard: {
     borderRadius: 16,
     marginBottom: 20,
+  },
+  emptyStateCard: {
+    minHeight: 200,
+  },
+  emptyStateContent: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  emptyStateButton: {
+    borderRadius: 12,
+  },
+  emptyStateButtonContent: {
+    paddingVertical: 6,
   },
   winnerCard: {
     borderRadius: 16,

@@ -42,11 +42,14 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   const register = async (name: string, email: string, password: string, rememberMe: boolean = false) => {
+    setIsLoading(true);
     try {
       await API.post('/auth/register', { name, email, password });
       await login(email, password, rememberMe);
     } catch (err) {
       Alert.alert('Error', 'No se pudo registrar');
+    } finally {
+      setIsLoading(false);
     }
   };
 
