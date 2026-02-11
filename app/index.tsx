@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
+import Colors from '../src/constants/Colors';
 
 const { width, height } = Dimensions.get('window');
 
