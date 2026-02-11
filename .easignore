@@ -1,0 +1,74 @@
+# Include everything from .gitignore (EAS uses only .easignore when present)
+# https://docs.expo.dev/build-reference/easignore/
+
+# Version control (not needed for build)
+.git/
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+nofuiyo.json
+
+# --- Additional exclusions to reduce archive size (see expo.fyi/eas-build-archive) ---
+
+# Build artifacts (large; EAS produces its own builds)
+*.aab
+*.apk
+*.ipa
+build*.aab
+**/application-*.aab
+
+# IDE / editor
+.vscode/
+.idea/
+.cursor/
+
+# Docs (not needed for build)
+README.md
+*.md
+
+# Test / coverage
+coverage/
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Logs and caches
+*.log
+.cache/
