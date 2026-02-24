@@ -62,6 +62,12 @@ const lightColors = {
   // Overlay colors
   overlay: 'rgba(0,0,0,0.1)',
   overlayDark: 'rgba(0,0,0,0.3)',
+
+  // Aliases used by app screens (was react-native NewAppScreen)
+  textDark: '#1A1A1A',
+  textLight: '#6B7280',
+  grayLight: '#E5E7EB',
+  grayLighter: '#F3F4F6',
 };
 
 // Dark theme colors
@@ -128,6 +134,12 @@ const darkColors = {
   // Overlay colors
   overlay: 'rgba(255,255,255,0.05)',
   overlayDark: 'rgba(255,255,255,0.1)',
+
+  // Aliases used by app screens
+  textDark: '#FFFFFF',
+  textLight: '#B0B0B0',
+  grayLight: '#404040',
+  grayLighter: '#2A2A2A',
 };
 
 // Theme type
