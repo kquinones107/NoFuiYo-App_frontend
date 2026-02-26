@@ -1,38 +1,119 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Checkbox, Text, TextInput } from 'react-native-paper';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
+
+import { useSignIn } from '@clerk/clerk-expo';
+import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
 
+const CREDENTIALS_KEY = 'nofuiyo_saved_credentials_v1';
+
+type SavedCreds = {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+};
+
+async function saveCredentials(data: SavedCreds) {
+  try {
+    await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(data));
+  } catch {
+    // noop
+  }
+}
+
+async function loadCredentials(): Promise<SavedCreds> {
+  try {
+    const raw = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+    if (!raw) return { email: '', password: '', rememberMe: false };
+    const parsed = JSON.parse(raw);
+    return {
+      email: parsed?.email ?? '',
+      password: parsed?.password ?? '',
+      rememberMe: !!parsed?.rememberMe,
+    };
+  } catch {
+    return { email: '', password: '', rememberMe: false };
+  }
+}
+
+async function clearCredentials() {
+  try {
+    await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+  } catch {
+    // noop
+  }
+}
+
 export default function LoginScreen() {
-  const { login, isLoading, loadSavedCredentials } = useContext(AuthContext);
   const { colors } = useTheme();
+  const { signIn, setActive, isLoaded } = useSignIn();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Load saved credentials on component mount
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Cargar credenciales guardadas
   React.useEffect(() => {
-    const loadCredentials = async () => {
-      const savedCredentials = await loadSavedCredentials();
-      setEmail(savedCredentials.email);
-      setPassword(savedCredentials.password);
-      setRememberMe(savedCredentials.rememberMe);
-    };
-    loadCredentials();
+    (async () => {
+      const saved = await loadCredentials();
+      setEmail(saved.email);
+      setPassword(saved.password);
+      setRememberMe(saved.rememberMe);
+    })();
   }, []);
 
+  const onLogin = async () => {
+    setErrorMsg(null);
+
+    if (!isLoaded) return;
+    if (!email || !password) {
+      setErrorMsg('Por favor completa correo y contraseña.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await signIn.create({
+        identifier: email,
+        password,
+      });
+
+      await setActive({ session: res.createdSessionId });
+
+      if (rememberMe) {
+        await saveCredentials({ email, password, rememberMe: true });
+      } else {
+        await clearCredentials();
+      }
+
+      // ✅ manda al home (ajusta si usas /(app)/home)
+      router.replace('/home');
+      // router.replace('/(app)/home');
+    } catch (err: any) {
+      // Clerk suele devolver err.errors[0].message
+      const msg =
+        err?.errors?.[0]?.message ||
+        'No se pudo iniciar sesión. Verifica tus datos e intenta de nuevo.';
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor: colors.background }]} 
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -45,11 +126,7 @@ export default function LoginScreen() {
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../assets/logo.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             <Text variant="headlineLarge" style={styles.appTitle}>NoFuiYo</Text>
             <Text variant="titleMedium" style={styles.appSubtitle}>App</Text>
           </View>
@@ -64,6 +141,12 @@ export default function LoginScreen() {
             <Text variant="bodyMedium" style={[styles.formSubtitle, { color: colors.textSecondary }]}>
               Inicia sesión para continuar
             </Text>
+
+            {errorMsg ? (
+              <Text style={{ color: colors.error, marginBottom: 12, textAlign: 'center' }}>
+                {errorMsg}
+              </Text>
+            ) : null}
 
             <TextInput
               label="Correo electrónico"
@@ -95,7 +178,7 @@ export default function LoginScreen() {
                 onPress={() => setRememberMe(!rememberMe)}
                 color={colors.primary}
               />
-              <Text 
+              <Text
                 style={[styles.rememberMeText, { color: colors.textPrimary }]}
                 onPress={() => setRememberMe(!rememberMe)}
               >
@@ -103,9 +186,9 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            <Button 
-              mode="contained" 
-              onPress={() => login(email, password, rememberMe)} 
+            <Button
+              mode="contained"
+              onPress={onLogin}
               style={[styles.button, { backgroundColor: colors.primary }]}
               disabled={isLoading}
               loading={isLoading}
@@ -120,9 +203,10 @@ export default function LoginScreen() {
               <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
             </View>
 
-            <Button 
-              mode="outlined" 
-              onPress={() => router.push('/register')} 
+            <Button
+              mode="outlined"
+              onPress={() => router.push('/register')}
+              // recomendado: router.push('/(auth)/sign-up')
               style={[styles.secondaryButton, { borderColor: colors.primary }]}
               contentStyle={styles.buttonContent}
             >
@@ -144,104 +228,45 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-  },
+  container: { flex: 1 },
+  scrollContainer: { flexGrow: 1 },
   header: {
     height: height * 0.35,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 50,
   },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 10,
-  },
+  logoContainer: { alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 80, height: 80, marginBottom: 10 },
   appTitle: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 4,
   },
-  appSubtitle: {
-    color: '#FFFFFF',
-    opacity: 0.9,
-    textAlign: 'center',
+  appSubtitle: { 
+    color: '#FFFFFF', 
+    opacity: 0.9, 
+    textAlign: 'center' 
   },
-  formCard: {
-    margin: 20,
-    marginTop: -30,
-    borderRadius: 20,
+  formCard: { 
+    margin: 20, 
+    marginTop: -30, 
+    borderRadius: 20 
   },
-  formContent: {
-    padding: 24,
-  },
-  formTitle: {
-    textAlign: 'center',
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  formSubtitle: {
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  rememberMeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 8,
-  },
-  rememberMeText: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  button: {
-    marginTop: 8,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  buttonContent: {
-    paddingVertical: 8,
-  },
-  secondaryButton: {
-    borderWidth: 2,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  footerText: {
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  footerLink: {
-    fontWeight: '600',
-  },
+  formContent: { padding: 24 },
+  formTitle: { textAlign: 'center', fontWeight: 'bold', marginBottom: 8 },
+  formSubtitle: { textAlign: 'center', marginBottom: 32 },
+  input: { marginBottom: 16 },
+  rememberMeContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 8 },
+  rememberMeText: { marginLeft: 8, fontSize: 14 },
+  button: { marginTop: 8, borderRadius: 12, elevation: 2 },
+  buttonContent: { paddingVertical: 8 },
+  secondaryButton: { borderWidth: 2, borderRadius: 12, marginTop: 8 },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { marginHorizontal: 16, fontSize: 14 },
+  footer: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
+  footerText: { textAlign: 'center', fontSize: 14 },
+  footerLink: { fontWeight: '600' },
 });

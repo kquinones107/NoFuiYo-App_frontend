@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
+import { useAuth } from '@clerk/clerk-expo';
+import { router } from 'expo-router';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -21,6 +23,7 @@ type Home = {
 export default function HomeScreen() {
   const router = useRouter();
   const { token, user, logout } = useContext(AuthContext);
+  const { signOut } = useAuth();
   const { colors, toggleTheme, isDark } = useTheme();
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
@@ -30,6 +33,12 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
+
+  const handleLogout = async () => {
+  await signOut();
+  router.replace('/login');
+};
+
 
   useEffect(() => {
     const fetchHomes = async () => {
@@ -171,8 +180,7 @@ export default function HomeScreen() {
             <Menu.Item
              onPress={() => {
              closeMenu();
-             logout(); // Cierra la sesión
-             router.replace('/login'); // Redirige a la pantalla principal o login
+             handleLogout(); // Cierra la sesión
             }}
             title="🚪 Cerrar sesión"
             />

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -11,9 +11,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
 import Colors from '../src/constants/Colors';
+
+import { useAuth } from '@clerk/clerk-expo';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,32 +22,26 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [checking, setChecking] = useState(true);
-  const { token } = useContext(AuthContext);
-  const { colors } = useTheme();
 
-  const onboardingData = [  
-    {
-      image: require('../assets/mock1.png'),
-      
-      buttonLabel: 'Continue',
-    },
-    {
-      image: require('../assets/mock2.png'),
-      buttonLabel: 'Continue',
-    },
-    {
-      image: require('../assets/mock3.png'),
-      buttonLabel: 'Get Started',
-    },
+  const { colors } = useTheme();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  const onboardingData = [
+    { image: require('../assets/mock1.png'), buttonLabel: 'Continue' },
+    { image: require('../assets/mock2.png'), buttonLabel: 'Continue' },
+    { image: require('../assets/mock3.png'), buttonLabel: 'Get Started' },
   ];
 
   useEffect(() => {
     const checkOnboarding = async () => {
+      // Espera a que Clerk cargue estado de sesión
+      if (!isLoaded) return;
+
       const onboarded = await AsyncStorage.getItem('hasOnboarded');
 
       if (!onboarded) {
         router.replace('/onboarding');
-      } else if (token) {
+      } else if (isSignedIn) {
         router.replace('/home');
       } else {
         router.replace('/login');
@@ -56,25 +51,26 @@ export default function OnboardingScreen() {
     };
 
     checkOnboarding();
-  }, [token, router]);
+  }, [isLoaded, isSignedIn, router]);
 
   const handleIndicatorPress = (index: number) => {
     setCurrentIndex(index);
   };
 
-  // Manejador para cambiar a la siguiente pantalla
   const handleNext = async () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
       await AsyncStorage.setItem('hasOnboarded', 'true');
-      router.replace('/login'); // Navega a la siguiente pantalla después del último slide
+
+      // Si ya está logueado, manda a home. Si no, login.
+      router.replace(isSignedIn ? '/home' : '/login');
     }
   };
 
   const { image, buttonLabel } = onboardingData[currentIndex];
 
-  if (checking) {
+  if (checking || !isLoaded) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <LinearGradient
@@ -96,9 +92,8 @@ export default function OnboardingScreen() {
         colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
         style={styles.overlay}
       />
-      
+
       <View style={styles.contentContainer}>
-        {/* Indicadores */}
         <View style={styles.indicatorContainer}>
           {onboardingData.map((_, index) => (
             <TouchableOpacity
@@ -128,32 +123,16 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-  },
-  loadingGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  loadingContainer: { flex: 1 },
+  loadingGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: {
     marginTop: 16,
     color: Colors.buttonText,
     fontSize: 16,
     fontWeight: '600',
   },
-  background: {
-    flex: 1,
-    width: width,
-    height: height,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+  background: { flex: 1, width, height },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   contentContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -161,19 +140,19 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
     paddingHorizontal: 20,
   },
-  indicatorContainer: { 
-    flexDirection: 'row', 
+  indicatorContainer: {
+    flexDirection: 'row',
     marginBottom: 40,
     justifyContent: 'center',
   },
-  indicator: { 
-    width: 12, 
-    height: 12, 
-    borderRadius: 6, 
-    backgroundColor: 'rgba(255,255,255,0.4)', 
+  indicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.4)',
     marginHorizontal: 6,
   },
-  activeIndicator: { 
+  activeIndicator: {
     backgroundColor: Colors.buttonText,
     width: 32,
     height: 12,
@@ -195,8 +174,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 28,
   },
-  buttonText: { 
-    color: Colors.buttonText, 
+  buttonText: {
+    color: Colors.buttonText,
     fontSize: 18,
     fontWeight: 'bold',
   },
