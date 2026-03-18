@@ -65,15 +65,20 @@
   },
   "overrides": {
     "react": "19.1.0",
+    "react-native-svg": "15.12.1",
     "sentry-expo": {
       "@sentry/react-native": "$@sentry/react-native"
     },
     "react-native-spin-the-wheel": {
-      "react-native-reanimated": "$react-native-reanimated"
+      "react-native-reanimated": "$react-native-reanimated",
+      "react-native-svg": "$react-native-svg"
     },
     "react-native-wheel-of-fortune": {
       "react-native-svg": "$react-native-svg"
     }
+  },
+  "resolutions": {
+    "react-native-svg": "15.12.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,28 +1,51 @@
-
 import axios from 'axios';
 
 const API = axios.create({
   baseURL: 'https://nofuiyoapp-backend.onrender.com/api',
 });
 
-// 1) Aquí guardamos una función que nos devuelve el token de Clerk
 let tokenGetter: null | (() => Promise<string | null>) = null;
 
-// 2) Esta función se llama una vez desde React (donde sí hay hooks)
 export function setAuthTokenGetter(getter: () => Promise<string | null>) {
   tokenGetter = getter;
 }
 
-// 3) Interceptor: antes de cada request, agrega Authorization: Bearer <token>
+// Attach Clerk session token to every request
 API.interceptors.request.use(async (config) => {
-  if (tokenGetter) {
+  if (!tokenGetter) {
+    if (__DEV__) console.warn('[API] tokenGetter not set — request will be unauthenticated');
+    return config;
+  }
+
+  try {
     const token = await tokenGetter();
     if (token) {
       config.headers = config.headers ?? {};
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (__DEV__) {
+      console.warn('[API] getToken() returned null — no Authorization header sent');
     }
+  } catch (e) {
+    if (__DEV__) console.error('[API] Failed to get auth token:', e);
   }
+
   return config;
 });
+
+// Surface auth errors clearly in dev
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (__DEV__ && error?.response?.status === 401) {
+      console.error(
+        '[API] 401 Unauthorized —',
+        error.config?.url,
+        '\n  detail:',
+        error.response?.data
+      );
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default API;

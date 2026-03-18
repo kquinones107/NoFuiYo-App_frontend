@@ -8,7 +8,7 @@ import { useTheme } from '../src/context/ThemeContext';
 import { useSignIn } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const CREDENTIALS_KEY = 'nofuiyo_saved_credentials_v1';
 
