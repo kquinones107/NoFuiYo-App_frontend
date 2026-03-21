@@ -1,15 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useContext, useEffect, useState } from 'react';
+import { useRouter} from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { ActivityIndicator, Avatar, Button, Card, Chip, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
-import { useAuth } from '@clerk/clerk-expo';
-import { router } from 'expo-router';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -22,8 +20,7 @@ type Home = {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { token, user, logout } = useContext(AuthContext);
-  const { signOut } = useAuth();
+  const {  isSignedIn, isLoaded , signOut } = useAuth();
   const { colors, toggleTheme, isDark } = useTheme();
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
@@ -33,50 +30,40 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
-
-  const handleLogout = async () => {
-  await signOut();
-  router.replace('/login');
-};
-
-
-  useEffect(() => {
-    const fetchHomes = async () => {
-      try {
-        const res = await API.get('/home/mis-hogares', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setHomes(res.data.homes);
-      } catch (err) {
-        console.error('Error al cargar hogares:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHomes();
-  }, [token]);
+  const { user } = useUser();
 
   const handleCreateHome = () => {
-    router.push('/home-setup'); // o directamente abrir un modal si lo prefieres
+    router.push('/home-setup');
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/login');
+  };
+
+
   useEffect(() => {
-    const fetchStats = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
+    const fetchData = async () => {
       try {
-        const res = await API.get('/stats/monthly', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setStats(res.data.stats);
+        const [homesRes, statsRes] = await Promise.all([
+          API.get('/home/mis-hogares'),
+          API.get('/stats/monthly'),
+        ]);
+
+        setHomes(homesRes.data.homes);
+        setStats(statsRes.data.stats);
       } catch (err) {
-        console.error('Error al cargar estadísticas', err);
+        console.error('Error al cargar datos del home:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
-  }, [token]);
+    fetchData();
+  }, [isLoaded, isSignedIn]);
+
 
   const chartData = {
     labels: stats.map((s) => s.name),
@@ -152,7 +139,7 @@ export default function HomeScreen() {
         <View style={styles.headerContent}>
           <View style={styles.greetingContainer}>
             <Text variant="headlineMedium" style={styles.greeting}>
-              ¡Hola {user?.name}! 👋
+              ¡Hola {user?.firstName || user?.username || 'Usuario'}! 👋
             </Text>
             <Text variant="bodyMedium" style={styles.greetingSubtitle}>
               Bienvenido de vuelta a NoFuiYo

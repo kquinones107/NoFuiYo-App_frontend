@@ -1,7 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Button, Card, Checkbox, Text, TextInput } from 'react-native-paper';
 import { useTheme } from '../src/context/ThemeContext';
 
@@ -21,15 +29,14 @@ type SavedCreds = {
 async function saveCredentials(data: SavedCreds) {
   try {
     await SecureStore.setItemAsync(CREDENTIALS_KEY, JSON.stringify(data));
-  } catch {
-    // noop
-  }
+  } catch {}
 }
 
 async function loadCredentials(): Promise<SavedCreds> {
   try {
     const raw = await SecureStore.getItemAsync(CREDENTIALS_KEY);
     if (!raw) return { email: '', password: '', rememberMe: false };
+
     const parsed = JSON.parse(raw);
     return {
       email: parsed?.email ?? '',
@@ -44,9 +51,7 @@ async function loadCredentials(): Promise<SavedCreds> {
 async function clearCredentials() {
   try {
     await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
-  } catch {
-    // noop
-  }
+  } catch {}
 }
 
 export default function LoginScreen() {
@@ -57,10 +62,12 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
+  const [code, setCode] = useState('');
+  const [pendingSecondFactor, setPendingSecondFactor] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Cargar credenciales guardadas
   React.useEffect(() => {
     (async () => {
       const saved = await loadCredentials();
@@ -70,42 +77,138 @@ export default function LoginScreen() {
     })();
   }, []);
 
+  const finishLogin = async (createdSessionId: string) => {
+    await setActive({ session: createdSessionId });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    if (rememberMe) {
+      await saveCredentials({
+        email: email.trim(),
+        password,
+        rememberMe: true,
+      });
+    } else {
+      await clearCredentials();
+    }
+
+    router.replace('/home');
+  };
+
   const onLogin = async () => {
     setErrorMsg(null);
 
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      setErrorMsg('Clerk todavía está cargando. Intenta de nuevo.');
+      return;
+    }
+
     if (!email || !password) {
       setErrorMsg('Por favor completa correo y contraseña.');
       return;
     }
 
     setIsLoading(true);
+
     try {
       const res = await signIn.create({
-        identifier: email,
+        identifier: email.trim(),
         password,
       });
 
-      await setActive({ session: res.createdSessionId });
+      console.log('[Login] signIn result:', JSON.stringify(res, null, 2));
+      console.log('[Login] status:', res.status);
+      console.log('[Login] createdSessionId:', res.createdSessionId);
 
-      if (rememberMe) {
-        await saveCredentials({ email, password, rememberMe: true });
-      } else {
-        await clearCredentials();
+      if (res.createdSessionId) {
+        await finishLogin(res.createdSessionId);
+        return;
       }
 
-      // ✅ manda al home (ajusta si usas /(app)/home)
-      router.replace('/home');
-      // router.replace('/(app)/home');
+      if (res.status === 'needs_second_factor') {
+        const hasEmailCode = res.supportedSecondFactors?.some(
+          (factor: any) => factor.strategy === 'email_code'
+        );
+
+        if (!hasEmailCode) {
+          setErrorMsg('Tu cuenta requiere un segundo factor no soportado todavía por esta pantalla.');
+          return;
+        }
+
+        await signIn.prepareSecondFactor({
+          strategy: 'email_code',
+        });
+
+        setPendingSecondFactor(true);
+        setErrorMsg('Te enviamos un código a tu correo. Escríbelo para continuar.');
+        return;
+      }
+
+      setErrorMsg(`No se pudo completar el inicio de sesión. Estado actual: ${res.status || 'desconocido'}`);
     } catch (err: any) {
-      // Clerk suele devolver err.errors[0].message
+      console.log('[Login] error raw:', err);
+      console.log('[Login] error json:', JSON.stringify(err, null, 2));
+
       const msg =
         err?.errors?.[0]?.message ||
+        err?.message ||
         'No se pudo iniciar sesión. Verifica tus datos e intenta de nuevo.';
+
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onVerifySecondFactor = async () => {
+    setErrorMsg(null);
+
+    if (!isLoaded) {
+      setErrorMsg('Clerk todavía está cargando. Intenta de nuevo.');
+      return;
+    }
+
+    if (!code) {
+      setErrorMsg('Ingresa el código que llegó a tu correo.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: 'email_code',
+        code,
+      });
+
+      console.log('[Login] second factor result:', JSON.stringify(result, null, 2));
+      console.log('[Login] second factor status:', result.status);
+      console.log('[Login] second factor createdSessionId:', result.createdSessionId);
+
+      if (!result.createdSessionId) {
+        setErrorMsg(`No se pudo completar la verificación. Estado actual: ${result.status || 'desconocido'}`);
+        return;
+      }
+
+      await finishLogin(result.createdSessionId);
+    } catch (err: any) {
+      console.log('[Login] second factor error raw:', err);
+      console.log('[Login] second factor error json:', JSON.stringify(err, null, 2));
+
+      const msg =
+        err?.errors?.[0]?.message ||
+        err?.message ||
+        'El código no es válido o expiró. Intenta nuevamente.';
+
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onBackToPassword = () => {
+    setPendingSecondFactor(false);
+    setCode('');
+    setErrorMsg(null);
   };
 
   return (
@@ -118,7 +221,6 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header with logo and gradient */}
         <LinearGradient
           colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
           style={styles.header}
@@ -126,20 +228,39 @@ export default function LoginScreen() {
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.logoContainer}>
-            <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-            <Text variant="headlineLarge" style={styles.appTitle}>NoFuiYo</Text>
-            <Text variant="titleMedium" style={styles.appSubtitle}>App</Text>
+            <Image
+              source={require('../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text variant="headlineLarge" style={styles.appTitle}>
+              NoFuiYo
+            </Text>
+            <Text variant="titleMedium" style={styles.appSubtitle}>
+              App
+            </Text>
           </View>
         </LinearGradient>
 
-        {/* Login Form Card */}
-        <Card style={[styles.formCard, { backgroundColor: colors.cardBackground }]} elevation={4}>
+        <Card
+          style={[styles.formCard, { backgroundColor: colors.cardBackground }]}
+          elevation={4}
+        >
           <Card.Content style={styles.formContent}>
-            <Text variant="headlineSmall" style={[styles.formTitle, { color: colors.textPrimary }]}>
-              ¡Bienvenido de vuelta!
+            <Text
+              variant="headlineSmall"
+              style={[styles.formTitle, { color: colors.textPrimary }]}
+            >
+              {!pendingSecondFactor ? '¡Bienvenido de vuelta!' : 'Verifica tu inicio de sesión'}
             </Text>
-            <Text variant="bodyMedium" style={[styles.formSubtitle, { color: colors.textSecondary }]}>
-              Inicia sesión para continuar
+
+            <Text
+              variant="bodyMedium"
+              style={[styles.formSubtitle, { color: colors.textSecondary }]}
+            >
+              {!pendingSecondFactor
+                ? 'Inicia sesión para continuar'
+                : 'Te enviamos un código a tu correo. Escríbelo abajo para completar el ingreso.'}
             </Text>
 
             {errorMsg ? (
@@ -148,78 +269,113 @@ export default function LoginScreen() {
               </Text>
             ) : null}
 
-            <TextInput
-              label="Correo electrónico"
-              value={email}
-              onChangeText={setEmail}
-              mode="outlined"
-              style={[styles.input, { backgroundColor: colors.inputBackground }]}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              left={<TextInput.Icon icon="email" />}
-            />
+            {!pendingSecondFactor ? (
+              <>
+                <TextInput
+                  label="Correo electrónico"
+                  value={email}
+                  onChangeText={setEmail}
+                  mode="outlined"
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  left={<TextInput.Icon icon="email" />}
+                />
 
-            <TextInput
-              label="Contraseña"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              mode="outlined"
-              style={[styles.input, { backgroundColor: colors.inputBackground }]}
-              autoComplete="password"
-              left={<TextInput.Icon icon="lock" />}
-            />
+                <TextInput
+                  label="Contraseña"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  mode="outlined"
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
+                  autoComplete="password"
+                  left={<TextInput.Icon icon="lock" />}
+                />
 
-            {/* Remember Me Checkbox */}
-            <View style={styles.rememberMeContainer}>
-              <Checkbox
-                status={rememberMe ? 'checked' : 'unchecked'}
-                onPress={() => setRememberMe(!rememberMe)}
-                color={colors.primary}
-              />
-              <Text
-                style={[styles.rememberMeText, { color: colors.textPrimary }]}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
-                Recordar mis datos
-              </Text>
-            </View>
+                <View style={styles.rememberMeContainer}>
+                  <Checkbox
+                    status={rememberMe ? 'checked' : 'unchecked'}
+                    onPress={() => setRememberMe(!rememberMe)}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[styles.rememberMeText, { color: colors.textPrimary }]}
+                    onPress={() => setRememberMe(!rememberMe)}
+                  >
+                    Recordar mis datos
+                  </Text>
+                </View>
 
-            <Button
-              mode="contained"
-              onPress={onLogin}
-              style={[styles.button, { backgroundColor: colors.primary }]}
-              disabled={isLoading}
-              loading={isLoading}
-              contentStyle={styles.buttonContent}
-            >
-              {isLoading ? 'Entrando...' : 'Iniciar Sesión'}
-            </Button>
+                <Button
+                  mode="contained"
+                  onPress={onLogin}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  contentStyle={styles.buttonContent}
+                >
+                  {isLoading ? 'Entrando...' : 'Iniciar Sesión'}
+                </Button>
 
-            <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
-              <Text style={[styles.dividerText, { color: colors.textTertiary }]}>o</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
-            </View>
+                <View style={styles.divider}>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
+                  <Text style={[styles.dividerText, { color: colors.textTertiary }]}>o</Text>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
+                </View>
 
-            <Button
-              mode="outlined"
-              onPress={() => router.push('/register')}
-              // recomendado: router.push('/(auth)/sign-up')
-              style={[styles.secondaryButton, { borderColor: colors.primary }]}
-              contentStyle={styles.buttonContent}
-            >
-              Crear cuenta nueva
-            </Button>
+                <Button
+                  mode="outlined"
+                  onPress={() => router.push('/register')}
+                  style={[styles.secondaryButton, { borderColor: colors.primary }]}
+                  contentStyle={styles.buttonContent}
+                >
+                  Crear cuenta nueva
+                </Button>
+              </>
+            ) : (
+              <>
+                <TextInput
+                  label="Código de verificación"
+                  value={code}
+                  onChangeText={setCode}
+                  mode="outlined"
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
+                  keyboardType="number-pad"
+                  left={<TextInput.Icon icon="shield-key" />}
+                />
+
+                <Button
+                  mode="contained"
+                  onPress={onVerifySecondFactor}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  contentStyle={styles.buttonContent}
+                >
+                  {isLoading ? 'Verificando...' : 'Verificar y continuar'}
+                </Button>
+
+                <Button
+                  mode="text"
+                  onPress={onBackToPassword}
+                  disabled={isLoading}
+                  style={{ marginTop: 8 }}
+                >
+                  Volver
+                </Button>
+              </>
+            )}
           </Card.Content>
         </Card>
 
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             ¿Olvidaste tu contraseña?{' '}
-            <Text style={[styles.footerLink, { color: colors.link }]}>Recuperar aquí</Text>
+            <Text style={[styles.footerLink, { color: colors.link }]}>
+              Recuperar aquí
+            </Text>
           </Text>
         </View>
       </ScrollView>
@@ -244,21 +400,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  appSubtitle: { 
-    color: '#FFFFFF', 
-    opacity: 0.9, 
-    textAlign: 'center' 
+  appSubtitle: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
   },
-  formCard: { 
-    margin: 20, 
-    marginTop: -30, 
-    borderRadius: 20 
+  formCard: {
+    margin: 20,
+    marginTop: -30,
+    borderRadius: 20,
   },
   formContent: { padding: 24 },
   formTitle: { textAlign: 'center', fontWeight: 'bold', marginBottom: 8 },
   formSubtitle: { textAlign: 'center', marginBottom: 32 },
   input: { marginBottom: 16 },
-  rememberMeContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 8 },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 8,
+  },
   rememberMeText: { marginLeft: 8, fontSize: 14 },
   button: { marginTop: 8, borderRadius: 12, elevation: 2 },
   buttonContent: { paddingVertical: 8 },
