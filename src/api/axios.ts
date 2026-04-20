@@ -54,9 +54,9 @@ API.interceptors.response.use(
       const data = error?.response?.data;
       const headers = error?.config?.headers;
 
-      console.error(`[API] ❌ ${method} ${url} → ${status ?? 'NO_RESPONSE'}`);
-      console.error('[API] Response body:', JSON.stringify(data, null, 2));
-      console.error('[API] Request headers sent:', JSON.stringify({
+      console.log(`[API] ❌ ${method} ${url} → ${status ?? 'NO_RESPONSE'}`);
+      console.log('[API] Response body:', JSON.stringify(data, null, 2));
+      console.log('[API] Request headers sent:', JSON.stringify({
         Authorization: headers?.Authorization
           ? headers.Authorization.slice(0, 30) + '...'
           : 'MISSING',
