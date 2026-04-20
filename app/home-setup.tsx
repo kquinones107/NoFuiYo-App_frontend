@@ -1,17 +1,17 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, IconButton, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function HomeSetupScreen() {
-  const { token } = useContext(AuthContext);
+  const { getToken, isLoaded } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -21,16 +21,30 @@ export default function HomeSetupScreen() {
 
   const createHome = async () => {
     if (!name.trim()) return Alert.alert('Nombre requerido', 'Escribe un nombre para el hogar');
+    if (!isLoaded) return;
+
+    console.log('[HomeSetup] isLoaded:', isLoaded);
+    const sessionToken = await getToken();
+    console.log('[HomeSetup] sessionToken present:', !!sessionToken);
+    console.log('[HomeSetup] sessionToken preview:', sessionToken ? sessionToken.slice(0, 30) + '...' : 'NULL');
+
+    if (!sessionToken) {
+      return Alert.alert('Sesión', 'No hay sesión activa. Cierra sesión e inicia de nuevo.');
+    }
+
     try {
       setLoading(true);
-      await API.post('/home/create', { name }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      console.log('[HomeSetup] POSTing /home/create with name:', name);
+      const res = await API.post('/home/create', { name });
+      console.log('[HomeSetup] ✅ createHome success:', JSON.stringify(res.data));
       Alert.alert('✅ Hogar creado correctamente');
       router.replace('/home');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'No se pudo crear el hogar');
+    } catch (err: any) {
+      console.error('[HomeSetup] ❌ createHome failed');
+      console.error('[HomeSetup] status:', err?.response?.status);
+      console.error('[HomeSetup] data:', JSON.stringify(err?.response?.data));
+      console.error('[HomeSetup] message:', err?.message);
+      Alert.alert('Error', `No se pudo crear el hogar\n${err?.response?.data?.message ?? err?.message}`);
     } finally {
       setLoading(false);
     }
@@ -38,11 +52,14 @@ export default function HomeSetupScreen() {
 
   const joinHome = async () => {
     if (!code.trim()) return Alert.alert('Código requerido', 'Ingresa un código de hogar');
+    if (!isLoaded) return;
+    const sessionToken = await getToken();
+    if (!sessionToken) {
+      return Alert.alert('Sesión', 'No hay sesión activa. Cierra sesión e inicia de nuevo.');
+    }
     try {
       setLoading(true);
-      await API.post(`/home/join/${code}`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.post(`/home/join/${encodeURIComponent(code.trim())}`, {});
       Alert.alert('✅ Te uniste al hogar correctamente');
       router.replace('/home');
     } catch (err) {

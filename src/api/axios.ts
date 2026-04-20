@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const API = axios.create({
   baseURL: 'https://nofuiyoapp-backend.onrender.com/api',
@@ -18,10 +18,16 @@ API.interceptors.request.use(async (config) => {
   }
 
   try {
+    const headers = AxiosHeaders.from(config.headers);
+    const auth = headers.get('Authorization');
+    if (auth === 'Bearer undefined' || auth === 'Bearer null') {
+      headers.delete('Authorization');
+    }
+    config.headers = headers;
+
     const token = await tokenGetter();
     if (token) {
-      config.headers = config.headers ?? {};
-      config.headers.Authorization = `Bearer ${token}`;
+      headers.set('Authorization', `Bearer ${token}`);
     } else if (__DEV__) {
       console.warn('[API] getToken() returned null — no Authorization header sent');
     }
@@ -32,17 +38,33 @@ API.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Surface auth errors clearly in dev
+// Surface all API errors clearly in dev
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (__DEV__) {
+      console.log(`[API] ✅ ${response.config?.method?.toUpperCase()} ${response.config?.url} → ${response.status}`);
+    }
+    return response;
+  },
   (error) => {
-    if (__DEV__ && error?.response?.status === 401) {
-      console.error(
-        '[API] 401 Unauthorized —',
-        error.config?.url,
-        '\n  detail:',
-        error.response?.data
-      );
+    if (__DEV__) {
+      const status = error?.response?.status;
+      const url = error?.config?.url;
+      const method = error?.config?.method?.toUpperCase();
+      const data = error?.response?.data;
+      const headers = error?.config?.headers;
+
+      console.error(`[API] ❌ ${method} ${url} → ${status ?? 'NO_RESPONSE'}`);
+      console.error('[API] Response body:', JSON.stringify(data, null, 2));
+      console.error('[API] Request headers sent:', JSON.stringify({
+        Authorization: headers?.Authorization
+          ? headers.Authorization.slice(0, 30) + '...'
+          : 'MISSING',
+      }));
+
+      if (!error?.response) {
+        console.error('[API] Network error (no response received):', error?.message);
+      }
     }
     return Promise.reject(error);
   }

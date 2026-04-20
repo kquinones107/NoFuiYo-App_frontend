@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         await clearCredentials();
       }
 
-      router.replace('/home');
+      // Same as login: let AuthGuard redirect after session is active (avoids /home → /login race).
     } catch (err: any) {
       const msg =
         err?.errors?.[0]?.message ||

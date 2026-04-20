@@ -79,7 +79,6 @@ export default function LoginScreen() {
 
   const finishLogin = async (createdSessionId: string) => {
     await setActive({ session: createdSessionId });
-    await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (rememberMe) {
       await saveCredentials({
@@ -91,7 +90,9 @@ export default function LoginScreen() {
       await clearCredentials();
     }
 
-    router.replace('/home');
+    // Do not router.replace('/home') here: AuthGuard redirects when `isSignedIn`
+    // becomes true on a public route. Navigating to /home before Clerk flushes
+    // session state makes AuthGuard think you are logged out and sends you back to /login.
   };
 
   const onLogin = async () => {
@@ -115,9 +116,9 @@ export default function LoginScreen() {
         password,
       });
 
-      console.log('[Login] signIn result:', JSON.stringify(res, null, 2));
-      console.log('[Login] status:', res.status);
-      console.log('[Login] createdSessionId:', res.createdSessionId);
+      if (__DEV__) {
+        console.log('[Login] status:', res.status, 'session:', res.createdSessionId);
+      }
 
       if (res.createdSessionId) {
         await finishLogin(res.createdSessionId);
@@ -180,9 +181,9 @@ export default function LoginScreen() {
         code,
       });
 
-      console.log('[Login] second factor result:', JSON.stringify(result, null, 2));
-      console.log('[Login] second factor status:', result.status);
-      console.log('[Login] second factor createdSessionId:', result.createdSessionId);
+      if (__DEV__) {
+        console.log('[Login] 2FA status:', result.status, 'session:', result.createdSessionId);
+      }
 
       if (!result.createdSessionId) {
         setErrorMsg(`No se pudo completar la verificación. Estado actual: ${result.status || 'desconocido'}`);
