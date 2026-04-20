@@ -40,10 +40,10 @@ export default function HomeSetupScreen() {
       Alert.alert('✅ Hogar creado correctamente');
       router.replace('/home');
     } catch (err: any) {
-      console.error('[HomeSetup] ❌ createHome failed');
-      console.error('[HomeSetup] status:', err?.response?.status);
-      console.error('[HomeSetup] data:', JSON.stringify(err?.response?.data));
-      console.error('[HomeSetup] message:', err?.message);
+      console.log('[HomeSetup] ❌ createHome failed');
+      console.log('[HomeSetup] status:', err?.response?.status);
+      console.log('[HomeSetup] data:', JSON.stringify(err?.response?.data));
+      console.log('[HomeSetup] message:', err?.message);
       Alert.alert('Error', `No se pudo crear el hogar\n${err?.response?.data?.message ?? err?.message}`);
     } finally {
       setLoading(false);
