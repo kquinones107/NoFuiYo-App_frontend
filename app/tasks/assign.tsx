@@ -21,6 +21,8 @@ export default function AssignTaskScreen() {
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
+  const [customIntervalDays, setCustomIntervalDays] = useState('7');
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -45,11 +47,25 @@ export default function AssignTaskScreen() {
 
     try {
       setLoading(true);
-      await API.post(
-        '/tasks',
-        { name, assignedTo, dueDate: dueDate.toISOString() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const body: Record<string, unknown> = {
+        name,
+        assignedTo,
+        dueDate: dueDate.toISOString(),
+        frequency,
+      };
+      if (frequency === 'custom') {
+        const n = parseInt(customIntervalDays, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 365) {
+          Alert.alert('Intervalo inválido', 'Indica un número de días entre 1 y 365');
+          setLoading(false);
+          return;
+        }
+        body.customIntervalDays = n;
+      }
+
+      await API.post('/tasks', body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       Alert.alert('Tarea asignada exitosamente');
       router.replace('/tasks');
     } catch (err) {
@@ -103,6 +119,35 @@ export default function AssignTaskScreen() {
             ))}
           </Picker>
         </View>
+
+        <Text style={[styles.label, { color: colors.textPrimary }]}>Recurrencia</Text>
+        <View style={[styles.pickerWrapper, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+          <Picker
+            selectedValue={frequency}
+            onValueChange={(v) => setFrequency(v as typeof frequency)}
+            style={{ color: colors.textPrimary }}
+            dropdownIconColor={colors.textPrimary}
+          >
+            <Picker.Item label="Diaria" value="daily" color={colors.textPrimary} />
+            <Picker.Item label="Semanal" value="weekly" color={colors.textPrimary} />
+            <Picker.Item label="Mensual" value="monthly" color={colors.textPrimary} />
+            <Picker.Item label="Personalizada (cada N días)" value="custom" color={colors.textPrimary} />
+          </Picker>
+        </View>
+
+        {frequency === 'custom' && (
+          <>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Cada cuántos días</Text>
+            <TextInput
+              value={customIntervalDays}
+              onChangeText={setCustomIntervalDays}
+              keyboardType="number-pad"
+              style={[styles.input, { backgroundColor: colors.inputBackground }]}
+              mode="outlined"
+              placeholder="7"
+            />
+          </>
+        )}
 
         <Text style={[styles.label, { color: colors.textPrimary }]}>Fecha límite</Text>
         <Button

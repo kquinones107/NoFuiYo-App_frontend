@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter} from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Dimensions, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { ActivityIndicator, Avatar, Button, Card, Chip, IconButton, Menu, Text } from 'react-native-paper';
@@ -8,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
 import { useTheme } from '../src/context/ThemeContext';
 import { useAuth, useUser } from '@clerk/clerk-expo';
+import { RecurringTasksWidget, type WidgetTask } from '../src/components/RecurringTasksWidget';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -25,6 +27,7 @@ export default function HomeScreen() {
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
+  const [tasks, setTasks] = useState<WidgetTask[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [menuVisible, setMenuVisible] = useState(false);
@@ -68,6 +71,22 @@ export default function HomeScreen() {
 
     fetchData();
   }, [isLoaded, isSignedIn]);
+
+  const refreshTasks = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
+    try {
+      const res = await API.get('/tasks');
+      setTasks(res.data.tasks ?? []);
+    } catch (e) {
+      console.error('Error al actualizar tareas:', e);
+    }
+  }, [isLoaded, isSignedIn]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshTasks();
+    }, [refreshTasks])
+  );
 
 
   const chartData = {
@@ -185,6 +204,14 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.widgetSection}>
+          <Text style={[styles.widgetTitle, { color: colors.textPrimary }]}>Tareas recurrentes</Text>
+          <Text style={[styles.widgetSubtitle, { color: colors.textSecondary }]}>
+            Progreso circular hasta la próxima fecha límite. Toca una tarjeta para completarla.
+          </Text>
+          <RecurringTasksWidget tasks={tasks} colors={colors} />
+        </View>
+
         {homes.length < 5 && (
           <Card style={[styles.createCard, { backgroundColor: colors.cardBackground, borderColor: colors.primary }]} onPress={handleCreateHome} elevation={2}>
             <Card.Content style={styles.createCardContent}>
@@ -338,6 +365,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 20,
+  },
+  widgetSection: {
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  widgetTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  widgetSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   createCard: {
     margin: 20,

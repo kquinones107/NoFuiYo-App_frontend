@@ -4,6 +4,7 @@ import { Text, Card, Button, ActivityIndicator, Avatar, IconButton } from 'react
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import API from '../src/api/axios';
+import { recurrenceLabel } from '../src/lib/recurringSchedule';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ interface Task {
     email: string;
   };
   frequency: string;
+  customIntervalDays?: number | null;
 }
 
 export default function TasksScreen() {
@@ -57,6 +59,9 @@ export default function TasksScreen() {
           left={(props) => <Avatar.Icon {...props} icon="checkbox-marked-outline" />}
         />
         <Card.Content>
+          <Text style={{ color: colors.textSecondary, marginBottom: 4 }}>
+            🔁 {recurrenceLabel(item.frequency, item.customIntervalDays)}
+          </Text>
           <Text style={{ color: isLate ? colors.error : colors.textPrimary }}>
             📅 Fecha límite: {new Date(item.dueDate).toLocaleDateString()}
           </Text>
