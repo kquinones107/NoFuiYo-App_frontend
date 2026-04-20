@@ -47,13 +47,18 @@ export default function HomeScreen() {
 
     const fetchData = async () => {
       try {
-        const [homesRes, statsRes] = await Promise.all([
+        const [homesResult, statsResult] = await Promise.allSettled([
           API.get('/home/mis-hogares'),
           API.get('/stats/monthly'),
         ]);
 
-        setHomes(homesRes.data.homes);
-        setStats(statsRes.data.stats);
+        if (homesResult.status === 'fulfilled') {
+          setHomes(homesResult.value.data.homes ?? []);
+        }
+
+        if (statsResult.status === 'fulfilled') {
+          setStats(statsResult.value.data.stats ?? []);
+        }
       } catch (err) {
         console.error('Error al cargar datos del home:', err);
       } finally {

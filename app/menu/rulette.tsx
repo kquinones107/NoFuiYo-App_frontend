@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, Text, Alert } from 'react-native';
 import Wheel from 'react-native-spin-the-wheel';
-import Colors from '../../src/constants/Colors';
+import { useRouter } from 'expo-router';
+import { IconButton } from 'react-native-paper';
+import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../../src/api/axios';
 import { AuthContext } from '../../src/context/AuthContext';
@@ -10,6 +12,8 @@ export default function RuletteScreen() {
   const [winner, setWinner] = useState('');
   const [members, setMembers] = useState<{ text: string }[]>([]);
   const { token } = useContext(AuthContext);
+  const { colors } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -33,23 +37,36 @@ export default function RuletteScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>🎯 Ruleta de Selección</Text>
-
-      {members.length > 0 && (
-        <Wheel
-          segments={members}
-          segColors={['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa']}
-          textColors={['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']}
-          upDuration={4000}
-          onFinished={handleFinish}
-          pinImage={require('../../assets/pin.png')}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerRow}>
+        <IconButton
+          icon="arrow-left"
+          iconColor={colors.textPrimary}
+          size={24}
+          onPress={() => router.back()}
         />
-      )}
+        <Text style={[styles.title, { color: colors.textPrimary }]}>🎯 Ruleta de Selección</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-      {winner !== '' && (
-        <Text style={styles.result}>🎉 El integrante seleccionado es: {winner} 🎉</Text>
-      )}
+      <View style={styles.wheelContainer}>
+        {members.length > 0 && (
+          <Wheel
+            segments={members}
+            segColors={['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa']}
+            textColors={['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff']}
+            upDuration={4000}
+            onFinished={handleFinish}
+            pinImage={require('../../assets/pin.png')}
+          />
+        )}
+
+        {winner !== '' && (
+          <Text style={[styles.result, { color: colors.textPrimary }]}>
+            🎉 El integrante seleccionado es: {winner} 🎉
+          </Text>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -57,21 +74,30 @@ export default function RuletteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: -8,
+  },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.textDark,
-    marginBottom: 20,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 48,
+  },
+  wheelContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   result: {
     marginTop: 30,
     fontSize: 16,
-    color: Colors.textDark,
     textAlign: 'center',
   },
 });

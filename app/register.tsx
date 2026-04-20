@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Dimensions, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Checkbox, Text, TextInput } from 'react-native-paper';
 import { useTheme } from '../src/context/ThemeContext';
-import Colors from '../src/constants/Colors';
 
 import { useSignUp } from '@clerk/clerk-expo';
 import * as SecureStore from 'expo-secure-store';
@@ -47,7 +46,6 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // verificación por email code
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
 
@@ -64,7 +62,6 @@ export default function RegisterScreen() {
     try {
       const { firstName, lastName } = splitName(name);
 
-      // 1) Crear usuario en Clerk
       await signUp.create({
         emailAddress: email,
         password,
@@ -72,7 +69,6 @@ export default function RegisterScreen() {
         lastName: lastName || undefined,
       });
 
-      // 2) Enviar código de verificación (si tu app en Clerk lo requiere)
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
 
       setPendingVerification(true);
@@ -97,20 +93,16 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      // 3) Verificar código
       const res = await signUp.attemptEmailAddressVerification({ code });
 
-      // 4) Activar sesión
       await setActive({ session: res.createdSessionId });
 
-      // 5) Recordar / limpiar credenciales
       if (rememberMe) {
         await saveCredentials({ email, password, rememberMe: true });
       } else {
         await clearCredentials();
       }
 
-      // ✅ ir al home
       router.replace('/home');
     } catch (err: any) {
       const msg =
@@ -132,7 +124,6 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
         <LinearGradient
           colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
           style={styles.header}
@@ -146,13 +137,12 @@ export default function RegisterScreen() {
           </View>
         </LinearGradient>
 
-        {/* Card */}
-        <Card style={styles.formCard} elevation={4}>
+        <Card style={[styles.formCard, { backgroundColor: colors.backgroundSecondary }]} elevation={4}>
           <Card.Content style={styles.formContent}>
-            <Text variant="headlineSmall" style={styles.formTitle}>
+            <Text variant="headlineSmall" style={[styles.formTitle, { color: colors.textPrimary }]}>
               {!pendingVerification ? '¡Únete a nosotros!' : 'Verifica tu correo'}
             </Text>
-            <Text variant="bodyMedium" style={styles.formSubtitle}>
+            <Text variant="bodyMedium" style={[styles.formSubtitle, { color: colors.textSecondary }]}>
               {!pendingVerification
                 ? 'Crea tu cuenta para comenzar'
                 : 'Te enviamos un código a tu correo. Escríbelo abajo.'}
@@ -171,7 +161,7 @@ export default function RegisterScreen() {
                   value={name}
                   onChangeText={setName}
                   mode="outlined"
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   autoCapitalize="words"
                   autoComplete="name"
                   left={<TextInput.Icon icon="account" />}
@@ -182,7 +172,7 @@ export default function RegisterScreen() {
                   value={email}
                   onChangeText={setEmail}
                   mode="outlined"
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -195,19 +185,21 @@ export default function RegisterScreen() {
                   onChangeText={setPassword}
                   secureTextEntry
                   mode="outlined"
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   autoComplete="password"
                   left={<TextInput.Icon icon="lock" />}
                 />
 
-                {/* Remember Me */}
                 <View style={styles.rememberMeContainer}>
                   <Checkbox
                     status={rememberMe ? 'checked' : 'unchecked'}
                     onPress={() => setRememberMe(!rememberMe)}
-                    color={Colors.primary}
+                    color={colors.primary}
                   />
-                  <Text style={styles.rememberMeText} onPress={() => setRememberMe(!rememberMe)}>
+                  <Text
+                    style={[styles.rememberMeText, { color: colors.textPrimary }]}
+                    onPress={() => setRememberMe(!rememberMe)}
+                  >
                     Recordar mis datos
                   </Text>
                 </View>
@@ -215,7 +207,7 @@ export default function RegisterScreen() {
                 <Button
                   mode="contained"
                   onPress={onRegister}
-                  style={styles.button}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
                   disabled={isLoading}
                   loading={isLoading}
                   contentStyle={styles.buttonContent}
@@ -224,15 +216,15 @@ export default function RegisterScreen() {
                 </Button>
 
                 <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>o</Text>
-                  <View style={styles.dividerLine} />
+                  <View style={[styles.dividerLine, { backgroundColor: colors.inputBorder }]} />
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>o</Text>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.inputBorder }]} />
                 </View>
 
                 <Button
                   mode="outlined"
                   onPress={() => router.push('/login')}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, { borderColor: colors.primary }]}
                   contentStyle={styles.buttonContent}
                 >
                   Ya tengo cuenta
@@ -245,7 +237,7 @@ export default function RegisterScreen() {
                   value={code}
                   onChangeText={setCode}
                   mode="outlined"
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   keyboardType="number-pad"
                   left={<TextInput.Icon icon="shield-key" />}
                 />
@@ -253,7 +245,7 @@ export default function RegisterScreen() {
                 <Button
                   mode="contained"
                   onPress={onVerifyCode}
-                  style={styles.button}
+                  style={[styles.button, { backgroundColor: colors.primary }]}
                   disabled={isLoading}
                   loading={isLoading}
                   contentStyle={styles.buttonContent}
@@ -274,12 +266,11 @@ export default function RegisterScreen() {
           </Card.Content>
         </Card>
 
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Al registrarte, aceptas nuestros{' '}
-            <Text style={styles.footerLink}>Términos de Servicio</Text> y{' '}
-            <Text style={styles.footerLink}>Política de Privacidad</Text>
+            <Text style={[styles.footerLink, { color: colors.link }]}>Términos de Servicio</Text> y{' '}
+            <Text style={[styles.footerLink, { color: colors.link }]}>Política de Privacidad</Text>
           </Text>
         </View>
       </ScrollView>
@@ -288,7 +279,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   scrollContainer: { flexGrow: 1 },
   header: {
     height: height * 0.35,
@@ -298,46 +289,26 @@ const styles = StyleSheet.create({
   },
   logoContainer: { alignItems: 'center', justifyContent: 'center' },
   logo: { width: 80, height: 80, marginBottom: 10 },
-  appTitle: {
-    color: Colors.buttonText,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  appSubtitle: { color: Colors.buttonText, opacity: 0.9, textAlign: 'center' },
+  appTitle: { color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
+  appSubtitle: { color: '#FFFFFF', opacity: 0.9, textAlign: 'center' },
   formCard: {
     margin: 20,
     marginTop: -30,
     borderRadius: 20,
-    backgroundColor: Colors.backgroundSecondary,
   },
   formContent: { padding: 24 },
-  formTitle: {
-    textAlign: 'center',
-    color: Colors.textDark,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  formSubtitle: {
-    textAlign: 'center',
-    color: Colors.textLight,
-    marginBottom: 32,
-  },
-  input: { marginBottom: 16, backgroundColor: Colors.inputBackground },
+  formTitle: { textAlign: 'center', fontWeight: 'bold', marginBottom: 8 },
+  formSubtitle: { textAlign: 'center', marginBottom: 32 },
+  input: { marginBottom: 16 },
   rememberMeContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 8 },
-  rememberMeText: { marginLeft: 8, color: Colors.textDark, fontSize: 14 },
-  button: { backgroundColor: Colors.primary, marginTop: 8, borderRadius: 12, elevation: 2 },
+  rememberMeText: { marginLeft: 8, fontSize: 14 },
+  button: { marginTop: 8, borderRadius: 12, elevation: 2 },
   buttonContent: { paddingVertical: 8 },
-  secondaryButton: { borderColor: Colors.primary, borderWidth: 2, borderRadius: 12, marginTop: 8 },
+  secondaryButton: { borderWidth: 2, borderRadius: 12, marginTop: 8 },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.grayLight },
-  dividerText: { marginHorizontal: 16, color: Colors.textSecondary, fontSize: 14 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { marginHorizontal: 16, fontSize: 14 },
   footer: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
-  footerText: {
-    color: Colors.textLight,
-    textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footerLink: { color: Colors.link, fontWeight: '600' },
+  footerText: { textAlign: 'center', fontSize: 14, lineHeight: 20 },
+  footerLink: { fontWeight: '600' },
 });

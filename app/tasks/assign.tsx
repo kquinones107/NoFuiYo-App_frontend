@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
-import { Text, TextInput, Button, HelperText } from 'react-native-paper';
+import { Text, TextInput, Button, IconButton } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import API from '../../src/api/axios';
 import { AuthContext } from '../../src/context/AuthContext';
-import Colors from '../../src/constants/Colors';
+import { useTheme } from '../../src/context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AssignTaskScreen() {
   const { token } = useContext(AuthContext);
+  const { colors } = useTheme();
   const router = useRouter();
 
   const [name, setName] = useState('');
@@ -57,93 +59,121 @@ export default function AssignTaskScreen() {
       setLoading(false);
     }
   };
+
   const onChangeDate = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) setDueDate(selectedDate);
   };
 
   return (
-    <View style={styles.container}>
-      <Text variant="titleMedium" style={styles.title}>📝 Asignar nueva tarea</Text>
-
-      <TextInput
-        label="Nombre de la tarea"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-        mode="outlined"
-      />
-
-      <Text style={styles.label}>Asignar a</Text>
-      <View style={[styles.input, { paddingHorizontal: 0, paddingVertical: 0 }]}>
-        <Picker
-          selectedValue={assignedTo}
-          onValueChange={setAssignedTo}
-          style={{ backgroundColor: Colors.inputBackground }}
-        >
-          <Picker.Item label="Selecciona un miembro" value="" />
-          {members.map((m) => (
-            <Picker.Item key={m._id} label={m.name} value={m._id} />
-          ))}
-        </Picker>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerRow}>
+        <IconButton
+          icon="arrow-left"
+          iconColor={colors.textPrimary}
+          size={24}
+          onPress={() => router.back()}
+        />
+        <Text variant="titleMedium" style={[styles.title, { color: colors.textPrimary }]}>
+          📝 Asignar nueva tarea
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <Text style={styles.label}>Fecha límite</Text>
-      <Button
-        mode="outlined"
-        onPress={() => setShowDatePicker(true)}
-        style={styles.dateButton}
-      >
-        {dueDate.toLocaleDateString()}
-      </Button>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="date"
-          display="default"
-          onChange={onChangeDate}
-          minimumDate={new Date()}
+      <View style={styles.form}>
+        <TextInput
+          label="Nombre de la tarea"
+          value={name}
+          onChangeText={setName}
+          style={[styles.input, { backgroundColor: colors.inputBackground }]}
+          mode="outlined"
         />
-      )}
 
-      <Button
-        mode="contained"
-        onPress={assignTask}
-        loading={loading}
-        disabled={!name || !assignedTo || loading}
-        style={styles.button}
-      >
-        Asignar tarea
-      </Button>
-    </View>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>Asignar a</Text>
+        <View style={[styles.pickerWrapper, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+          <Picker
+            selectedValue={assignedTo}
+            onValueChange={setAssignedTo}
+            style={{ color: colors.textPrimary }}
+            dropdownIconColor={colors.textPrimary}
+          >
+            <Picker.Item label="Selecciona un miembro" value="" color={colors.textSecondary} />
+            {members.map((m) => (
+              <Picker.Item key={m._id} label={m.name} value={m._id} color={colors.textPrimary} />
+            ))}
+          </Picker>
+        </View>
+
+        <Text style={[styles.label, { color: colors.textPrimary }]}>Fecha límite</Text>
+        <Button
+          mode="outlined"
+          onPress={() => setShowDatePicker(true)}
+          style={styles.dateButton}
+        >
+          {dueDate.toLocaleDateString()}
+        </Button>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={dueDate}
+            mode="date"
+            display="default"
+            onChange={onChangeDate}
+            minimumDate={new Date()}
+          />
+        )}
+
+        <Button
+          mode="contained"
+          onPress={assignTask}
+          loading={loading}
+          disabled={!name || !assignedTo || loading}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+        >
+          Asignar tarea
+        </Button>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 8,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 48,
+  },
+  form: {
+    flex: 1,
     justifyContent: 'center',
     padding: 20,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: 20,
-    color: Colors.textDark,
-  },
   input: {
     marginBottom: 15,
-    backgroundColor: Colors.inputBackground,
   },
   label: {
     marginBottom: 5,
-    color: Colors.textDark,
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderRadius: 4,
+    marginBottom: 15,
+    overflow: 'hidden',
   },
   dateButton: {
     marginBottom: 15,
   },
   button: {
-    backgroundColor: Colors.button,
+    marginTop: 8,
   },
 });

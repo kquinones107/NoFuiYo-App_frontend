@@ -1,12 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useContext, useEffect, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Avatar, Card, Chip, Text } from 'react-native-paper';
+import { ActivityIndicator, Avatar, Card, Chip, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
-import Colors from '../src/constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +23,7 @@ interface HistoryItem {
 export default function HistoryScreen() {
   const { token } = useContext(AuthContext);
   const { colors } = useTheme();
+  const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'late' | 'ontime'>('all');
@@ -39,53 +40,50 @@ export default function HistoryScreen() {
       setLoading(false);
     }
   };
+
   const formatDate = (isoString: string) => {
-  const date = new Date(isoString);
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-};
-const filteredData = history.filter((item) => {
-  if (filter === 'all') return true;
-  if (filter === 'late') return item.late === true;
-  if (filter === 'ontime') return item.late === false;
-});
+    const date = new Date(isoString);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
+  const filteredData = history.filter((item) => {
+    if (filter === 'all') return true;
+    if (filter === 'late') return item.late === true;
+    if (filter === 'ontime') return item.late === false;
+  });
 
   useEffect(() => {
     fetchHistory();
   }, []);
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    <Card style={styles.card} elevation={2}>
+    <Card style={[styles.card, { backgroundColor: colors.backgroundSecondary }]} elevation={2}>
       <Card.Title
         title={item.task.name}
-        titleStyle={styles.taskTitle}
+        titleStyle={[styles.taskTitle, { color: colors.textPrimary }]}
         subtitle={`Hecha por: ${item.doneBy.name} el ${formatDate(item.doneAt)}`}
-        subtitleStyle={styles.taskSubtitle}
+        subtitleStyle={[styles.taskSubtitle, { color: colors.textSecondary }]}
         left={(props) => (
           <Avatar.Icon
             {...props}
             icon={item.late ? 'alert-circle-outline' : 'check-circle-outline'}
             style={[
               styles.avatar,
-              {
-                backgroundColor: item.late ? Colors.error : Colors.success,
-              }
+              { backgroundColor: item.late ? colors.error : colors.success },
             ]}
           />
         )}
         right={() => (
           <View style={styles.statusContainer}>
-            <Text style={[
-              styles.statusText,
-              { color: item.late ? Colors.error : Colors.success }
-            ]}>
+            <Text style={[styles.statusText, { color: item.late ? colors.error : colors.success }]}>
               {item.late ? 'Tarde' : 'A tiempo'}
             </Text>
           </View>
         )}
       />
       {item.photoUrl && (
-        <Card.Cover 
-          source={{ uri: item.photoUrl }} 
+        <Card.Cover
+          source={{ uri: item.photoUrl }}
           style={styles.taskImage}
         />
       )}
@@ -94,13 +92,19 @@ const filteredData = history.filter((item) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header with gradient */}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
+        <IconButton
+          icon="arrow-left"
+          iconColor="#FFFFFF"
+          size={24}
+          onPress={() => router.back()}
+          style={styles.backButton}
+        />
         <Text variant="headlineMedium" style={styles.title}>📋 Historial de Tareas</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
           Revisa todas las tareas completadas
@@ -109,34 +113,33 @@ const filteredData = history.filter((item) => {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator animating color={Colors.primary} size="large" />
-          <Text style={styles.loadingText}>Cargando historial...</Text>
+          <ActivityIndicator animating color={colors.primary} size="large" />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando historial...</Text>
         </View>
       ) : (
         <>
-          {/* Filter chips */}
           <View style={styles.filterContainer}>
             <Chip
               selected={filter === 'all'}
               onPress={() => setFilter('all')}
-              style={[styles.chip, filter === 'all' && styles.selectedChip]}
-              textStyle={filter === 'all' ? styles.selectedChipText : styles.chipText}
+              style={[styles.chip, { backgroundColor: filter === 'all' ? colors.primary : colors.surfaceVariant }]}
+              textStyle={{ color: filter === 'all' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'all' ? '600' : '400' }}
             >
               Todas
             </Chip>
             <Chip
               selected={filter === 'ontime'}
               onPress={() => setFilter('ontime')}
-              style={[styles.chip, filter === 'ontime' && styles.selectedChip]}
-              textStyle={filter === 'ontime' ? styles.selectedChipText : styles.chipText}
+              style={[styles.chip, { backgroundColor: filter === 'ontime' ? colors.primary : colors.surfaceVariant }]}
+              textStyle={{ color: filter === 'ontime' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'ontime' ? '600' : '400' }}
             >
               A tiempo
             </Chip>
             <Chip
               selected={filter === 'late'}
               onPress={() => setFilter('late')}
-              style={[styles.chip, filter === 'late' && styles.selectedChip]}
-              textStyle={filter === 'late' ? styles.selectedChipText : styles.chipText}
+              style={[styles.chip, { backgroundColor: filter === 'late' ? colors.primary : colors.surfaceVariant }]}
+              textStyle={{ color: filter === 'late' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'late' ? '600' : '400' }}
             >
               Vencidas
             </Chip>
@@ -158,22 +161,26 @@ const filteredData = history.filter((item) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 30,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginLeft: -8,
+    marginBottom: 4,
+  },
   title: {
-    color: Colors.buttonText,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: Colors.buttonText,
+    color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
   },
@@ -185,7 +192,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    color: Colors.textLight,
     fontSize: 16,
   },
   filterContainer: {
@@ -196,18 +202,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   chip: {
-    backgroundColor: Colors.grayLighter,
-    borderColor: Colors.grayLight,
-  },
-  selectedChip: {
-    backgroundColor: Colors.primary,
-  },
-  chipText: {
-    color: Colors.textDark,
-  },
-  selectedChipText: {
-    color: Colors.buttonText,
-    fontWeight: '600',
+    borderColor: 'transparent',
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -215,22 +210,17 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
-    backgroundColor: Colors.backgroundSecondary,
     borderRadius: 12,
     elevation: 2,
   },
   taskTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.textDark,
   },
   taskSubtitle: {
     fontSize: 14,
-    color: Colors.textLight,
   },
-  avatar: {
-    backgroundColor: Colors.primary,
-  },
+  avatar: {},
   statusContainer: {
     paddingRight: 8,
   },

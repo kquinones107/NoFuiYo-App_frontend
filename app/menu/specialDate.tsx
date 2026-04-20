@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, TextInput, Button } from 'react-native-paper';
-import Colors from '../../src/constants/Colors';
+import { Text, Card, TextInput, Button, IconButton } from 'react-native-paper';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthContext } from '../../src/context/AuthContext';
@@ -9,6 +10,8 @@ import API from '../../src/api/axios';
 
 export default function SpecialDatesScreen() {
   const { token } = useContext(AuthContext);
+  const { colors } = useTheme();
+  const router = useRouter();
   type SpecialDate = { title: string; date: string };
   const [dates, setDates] = useState<SpecialDate[]>([]);
   const [newTitle, setNewTitle] = useState('');
@@ -49,13 +52,27 @@ export default function SpecialDatesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>🎉 Fechas Especiales del Hogar</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerRow}>
+        <IconButton
+          icon="arrow-left"
+          iconColor={colors.textPrimary}
+          size={24}
+          onPress={() => router.back()}
+        />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>🎉 Fechas Especiales</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
+      <ScrollView>
         {dates.map((item, index) => (
-          <Card key={index} style={styles.card}>
-            <Card.Title title={item.title} subtitle={`📅 ${item.date}`} />
+          <Card key={index} style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
+            <Card.Title
+              title={item.title}
+              titleStyle={{ color: colors.textPrimary }}
+              subtitle={`📅 ${item.date}`}
+              subtitleStyle={{ color: colors.textSecondary }}
+            />
           </Card>
         ))}
 
@@ -63,7 +80,7 @@ export default function SpecialDatesScreen() {
           label="Título de la fecha"
           value={newTitle}
           onChangeText={setNewTitle}
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.inputBackground }]}
           mode="outlined"
         />
 
@@ -75,7 +92,7 @@ export default function SpecialDatesScreen() {
           >
             Seleccionar fecha
           </Button>
-          <Text style={styles.dateText}>{newDate.toDateString()}</Text>
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>{newDate.toDateString()}</Text>
         </View>
 
         {showPicker && (
@@ -91,7 +108,7 @@ export default function SpecialDatesScreen() {
           />
         )}
 
-        <Button mode="contained" onPress={addDate} style={styles.button}>
+        <Button mode="contained" onPress={addDate} style={[styles.button, { backgroundColor: colors.primary }]}>
           Agregar Fecha Especial
         </Button>
       </ScrollView>
@@ -102,26 +119,30 @@ export default function SpecialDatesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     padding: 20,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    marginHorizontal: -8,
+  },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.textDark,
     textAlign: 'center',
-    marginBottom: 20,
+  },
+  headerSpacer: {
+    width: 48,
   },
   card: {
-    backgroundColor: '#fff',
     marginBottom: 10,
   },
   input: {
-    backgroundColor: Colors.inputBackground,
     marginBottom: 10,
   },
   button: {
-    backgroundColor: Colors.button,
     marginTop: 15,
   },
   dateRow: {
@@ -131,7 +152,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     marginLeft: 10,
-    color: Colors.textDark,
   },
   dateButton: {
     flexGrow: 1,

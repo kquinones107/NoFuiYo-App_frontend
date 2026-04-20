@@ -1,12 +1,16 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
-import Colors from '../../src/constants/Colors';
+import { Text, TextInput, Button, IconButton } from 'react-native-paper';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
 import { AuthContext } from '../../src/context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../../src/api/axios';
 
 export default function EditProfileScreen() {
   const { token, user, setUser } = useContext(AuthContext);
+  const { colors } = useTheme();
+  const router = useRouter();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [loading, setLoading] = useState(false);
@@ -35,56 +39,73 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>✏️ Editar Perfil</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.headerRow}>
+        <IconButton
+          icon="arrow-left"
+          iconColor={colors.textPrimary}
+          size={24}
+          onPress={() => router.back()}
+        />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>✏️ Editar Perfil</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-      <TextInput
-        label="Nombre"
-        value={name}
-        onChangeText={setName}
-        mode="outlined"
-        style={styles.input}
-      />
+      <View style={styles.form}>
+        <TextInput
+          label="Nombre"
+          value={name}
+          onChangeText={setName}
+          mode="outlined"
+          style={[styles.input, { backgroundColor: colors.inputBackground }]}
+        />
 
-      <TextInput
-        label="Correo"
-        value={email}
-        onChangeText={setEmail}
-        mode="outlined"
-        style={styles.input}
-      />
+        <TextInput
+          label="Correo"
+          value={email}
+          onChangeText={setEmail}
+          mode="outlined"
+          style={[styles.input, { backgroundColor: colors.inputBackground }]}
+        />
 
-      <Button
-        mode="contained"
-        onPress={handleUpdate}
-        loading={loading}
-        style={styles.button}
-      >
-        Guardar Cambios
-      </Button>
-    </View>
+        <Button
+          mode="contained"
+          onPress={handleUpdate}
+          loading={loading}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+        >
+          Guardar Cambios
+        </Button>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
-    padding: 20,
-    justifyContent: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 8,
   },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.textDark,
     textAlign: 'center',
-    marginBottom: 20,
+  },
+  headerSpacer: {
+    width: 48,
+  },
+  form: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
   },
   input: {
     marginBottom: 15,
-    backgroundColor: Colors.inputBackground,
   },
-  button: {
-    backgroundColor: Colors.button,
-  },
+  button: {},
 });

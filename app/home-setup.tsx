@@ -1,19 +1,19 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useContext, useState } from 'react';
-import { Alert, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { Button, Card, Text, TextInput } from 'react-native-paper';
+import { Alert, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Card, IconButton, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../src/api/axios';
 import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
-import Colors from '../src/constants/Colors';
 
 const { width, height } = Dimensions.get('window');
 
 export default function HomeSetupScreen() {
   const { token } = useContext(AuthContext);
   const { colors } = useTheme();
+  const router = useRouter();
 
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -55,22 +55,28 @@ export default function HomeSetupScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardContainer} 
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header with gradient */}
           <LinearGradient
             colors={[colors.gradientStart, colors.gradientMiddle, colors.gradientEnd]}
             style={styles.header}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
+            <IconButton
+              icon="arrow-left"
+              iconColor="#FFFFFF"
+              size={24}
+              onPress={() => router.back()}
+              style={styles.backButton}
+            />
             <Text variant="headlineMedium" style={styles.headerTitle}>🏠 Configurar Hogar</Text>
             <Text variant="bodyMedium" style={styles.headerSubtitle}>
               Crea un nuevo hogar o únete a uno existente
@@ -78,12 +84,12 @@ export default function HomeSetupScreen() {
           </LinearGradient>
 
           {/* Create Home Card */}
-          <Card style={styles.formCard} elevation={4}>
+          <Card style={[styles.formCard, { backgroundColor: colors.backgroundSecondary }]} elevation={4}>
             <Card.Content style={styles.formContent}>
-              <Text variant="headlineSmall" style={styles.cardTitle}>
+              <Text variant="headlineSmall" style={[styles.cardTitle, { color: colors.textPrimary }]}>
                 Crear un nuevo hogar
               </Text>
-              <Text variant="bodyMedium" style={styles.cardSubtitle}>
+              <Text variant="bodyMedium" style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
                 Establece tu hogar y comparte el código con tu familia
               </Text>
 
@@ -91,16 +97,16 @@ export default function HomeSetupScreen() {
                 label="Nombre del hogar"
                 value={name}
                 onChangeText={setName}
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.inputBackground }]}
                 mode="outlined"
                 left={<TextInput.Icon icon="home" />}
               />
 
-              <Button 
-                mode="contained" 
-                onPress={createHome} 
-                loading={loading} 
-                style={styles.button}
+              <Button
+                mode="contained"
+                onPress={createHome}
+                loading={loading}
+                style={[styles.button, { backgroundColor: colors.primary }]}
                 contentStyle={styles.buttonContent}
               >
                 Crear hogar
@@ -109,12 +115,12 @@ export default function HomeSetupScreen() {
           </Card>
 
           {/* Join Home Card */}
-          <Card style={styles.formCard} elevation={4}>
+          <Card style={[styles.formCard, { backgroundColor: colors.backgroundSecondary }]} elevation={4}>
             <Card.Content style={styles.formContent}>
-              <Text variant="headlineSmall" style={styles.cardTitle}>
+              <Text variant="headlineSmall" style={[styles.cardTitle, { color: colors.textPrimary }]}>
                 ¿Tienes un código?
               </Text>
-              <Text variant="bodyMedium" style={styles.cardSubtitle}>
+              <Text variant="bodyMedium" style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
                 Únete a un hogar existente con el código de invitación
               </Text>
 
@@ -122,16 +128,16 @@ export default function HomeSetupScreen() {
                 label="Código de hogar"
                 value={code}
                 onChangeText={setCode}
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.inputBackground }]}
                 mode="outlined"
                 left={<TextInput.Icon icon="key" />}
               />
 
-              <Button 
-                mode="outlined" 
-                onPress={joinHome} 
-                loading={loading} 
-                style={styles.secondaryButton}
+              <Button
+                mode="outlined"
+                onPress={joinHome}
+                loading={loading}
+                style={[styles.secondaryButton, { borderColor: colors.primary }]}
                 contentStyle={styles.buttonContent}
               >
                 Unirse al hogar
@@ -147,7 +153,6 @@ export default function HomeSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   keyboardContainer: {
     flex: 1,
@@ -156,19 +161,24 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 30,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginLeft: -8,
+    marginBottom: 4,
+  },
   headerTitle: {
-    color: Colors.buttonText,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   headerSubtitle: {
-    color: Colors.buttonText,
+    color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
   },
@@ -176,32 +186,26 @@ const styles = StyleSheet.create({
     margin: 20,
     marginTop: -20,
     borderRadius: 20,
-    backgroundColor: Colors.backgroundSecondary,
   },
   formContent: {
     padding: 24,
   },
   cardTitle: {
-    color: Colors.textDark,
     fontWeight: 'bold',
     marginBottom: 8,
   },
   cardSubtitle: {
-    color: Colors.textLight,
     marginBottom: 24,
     lineHeight: 20,
   },
   input: {
     marginBottom: 20,
-    backgroundColor: Colors.inputBackground,
   },
   button: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     elevation: 2,
   },
   secondaryButton: {
-    borderColor: Colors.primary,
     borderWidth: 2,
     borderRadius: 12,
   },
