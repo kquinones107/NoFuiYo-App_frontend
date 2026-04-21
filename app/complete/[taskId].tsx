@@ -1,18 +1,18 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-expo';
+import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Alert } from 'react-native';
 import { Text, Button, IconButton } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AuthContext } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
+import API from '../../src/api/axios';
 
 export default function CompleteTaskScreen() {
   const { taskId } = useLocalSearchParams();
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const { token } = useContext(AuthContext);
+  const { getToken } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -27,7 +27,7 @@ export default function CompleteTaskScreen() {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.8,
     });
 
@@ -52,16 +52,15 @@ export default function CompleteTaskScreen() {
         type: 'image/jpeg',
       } as any);
 
-      const uploadRes = await axios.post('https://nofuiyoapp-backend.onrender.com/api/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const uploadRes = await API.post('/upload', formData);
 
       const imageUrl = uploadRes.data.url;
 
-      await axios.post(
-        `https://nofuiyoapp-backend.onrender.com/api/history/${taskId}/complete`,
+      const t = await getToken();
+      await API.post(
+        `/history/${taskId}/complete`,
         { photoUrl: imageUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${t}` } }
       );
 
       Alert.alert('✅ Tarea registrada');

@@ -1,16 +1,16 @@
-import React, { useEffect, useState, useContext } from 'react';
+import { useAuth } from '@clerk/clerk-expo';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert, Platform } from 'react-native';
 import { Text, TextInput, Button, IconButton } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import API from '../../src/api/axios';
-import { AuthContext } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AssignTaskScreen() {
-  const { token } = useContext(AuthContext);
+  const { getToken } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -27,8 +27,9 @@ export default function AssignTaskScreen() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
+        const t = await getToken();
         const res = await API.get('/home/members', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${t}` },
         });
         setMembers(res.data.members);
       } catch (err) {
@@ -63,8 +64,9 @@ export default function AssignTaskScreen() {
         body.customIntervalDays = n;
       }
 
+      const t = await getToken();
       await API.post('/tasks', body, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${t}` },
       });
       Alert.alert('Tarea asignada exitosamente');
       router.replace('/tasks');
