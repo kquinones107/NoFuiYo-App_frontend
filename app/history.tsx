@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Avatar, Card, Chip, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@clerk/clerk-expo';
+
 import API from '../src/api/axios';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -21,19 +22,21 @@ interface HistoryItem {
 }
 
 export default function HistoryScreen() {
-  const { token } = useContext(AuthContext);
+  const { isLoaded, isSignedIn } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'late' | 'ontime'>('all');
 
   const fetchHistory = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
     try {
-      const res = await API.get('/history', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setHistory(res.data.history);
+      setLoading(true);
+      const res = await API.get('/history');
+      setHistory(res.data.history ?? []);
     } catch (err) {
       console.error('Error al cargar historial', err);
     } finally {
@@ -50,11 +53,14 @@ export default function HistoryScreen() {
     if (filter === 'all') return true;
     if (filter === 'late') return item.late === true;
     if (filter === 'ontime') return item.late === false;
+    return true;
   });
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      fetchHistory();
+    }
+  }, [isLoaded, isSignedIn]);
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <Card style={[styles.card, { backgroundColor: colors.backgroundSecondary }]} elevation={2}>
@@ -75,20 +81,35 @@ export default function HistoryScreen() {
         )}
         right={() => (
           <View style={styles.statusContainer}>
-            <Text style={[styles.statusText, { color: item.late ? colors.error : colors.success }]}>
+            <Text
+              style={[
+                styles.statusText,
+                { color: item.late ? colors.error : colors.success },
+              ]}
+            >
               {item.late ? 'Tarde' : 'A tiempo'}
             </Text>
           </View>
         )}
       />
       {item.photoUrl && (
-        <Card.Cover
-          source={{ uri: item.photoUrl }}
-          style={styles.taskImage}
-        />
+        <Card.Cover source={{ uri: item.photoUrl }} style={styles.taskImage} />
       )}
     </Card>
   );
+
+  if (!isLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator animating color={colors.primary} size="large" />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Cargando historial...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -105,7 +126,9 @@ export default function HistoryScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         />
-        <Text variant="headlineMedium" style={styles.title}>📋 Historial de Tareas</Text>
+        <Text variant="headlineMedium" style={styles.title}>
+          📋 Historial de Tareas
+        </Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
           Revisa todas las tareas completadas
         </Text>
@@ -114,7 +137,9 @@ export default function HistoryScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator animating color={colors.primary} size="large" />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando historial...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Cargando historial...
+          </Text>
         </View>
       ) : (
         <>
@@ -122,24 +147,53 @@ export default function HistoryScreen() {
             <Chip
               selected={filter === 'all'}
               onPress={() => setFilter('all')}
-              style={[styles.chip, { backgroundColor: filter === 'all' ? colors.primary : colors.surfaceVariant }]}
-              textStyle={{ color: filter === 'all' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'all' ? '600' : '400' }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor:
+                    filter === 'all' ? colors.primary : colors.surfaceVariant,
+                },
+              ]}
+              textStyle={{
+                color: filter === 'all' ? '#FFFFFF' : colors.textPrimary,
+                fontWeight: filter === 'all' ? '600' : '400',
+              }}
             >
               Todas
             </Chip>
+
             <Chip
               selected={filter === 'ontime'}
               onPress={() => setFilter('ontime')}
-              style={[styles.chip, { backgroundColor: filter === 'ontime' ? colors.primary : colors.surfaceVariant }]}
-              textStyle={{ color: filter === 'ontime' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'ontime' ? '600' : '400' }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor:
+                    filter === 'ontime' ? colors.primary : colors.surfaceVariant,
+                },
+              ]}
+              textStyle={{
+                color: filter === 'ontime' ? '#FFFFFF' : colors.textPrimary,
+                fontWeight: filter === 'ontime' ? '600' : '400',
+              }}
             >
               A tiempo
             </Chip>
+
             <Chip
               selected={filter === 'late'}
               onPress={() => setFilter('late')}
-              style={[styles.chip, { backgroundColor: filter === 'late' ? colors.primary : colors.surfaceVariant }]}
-              textStyle={{ color: filter === 'late' ? '#FFFFFF' : colors.textPrimary, fontWeight: filter === 'late' ? '600' : '400' }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor:
+                    filter === 'late' ? colors.primary : colors.surfaceVariant,
+                },
+              ]}
+              textStyle={{
+                color: filter === 'late' ? '#FFFFFF' : colors.textPrimary,
+                fontWeight: filter === 'late' ? '600' : '400',
+              }}
             >
               Vencidas
             </Chip>

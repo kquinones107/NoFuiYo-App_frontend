@@ -1,11 +1,12 @@
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { Text, Card, Button, ActivityIndicator, Avatar, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '@clerk/clerk-expo';
+
 import API from '../src/api/axios';
 import { recurrenceLabel } from '../src/lib/recurringSchedule';
-import { AuthContext } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,16 +25,18 @@ interface Task {
 export default function TasksScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const { token } = useContext(AuthContext);
+
+  const { isLoaded, isSignedIn } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
 
   const fetchTasks = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
     try {
-      const res = await API.get('/tasks', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTasks(res.data.tasks);
+      setLoading(true);
+      const res = await API.get('/tasks');
+      setTasks(res.data.tasks ?? []);
     } catch (error) {
       console.error('Error al cargar tareas', error);
     } finally {
@@ -43,12 +46,15 @@ export default function TasksScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchTasks();
-    }, [])
+      if (isLoaded && isSignedIn) {
+        fetchTasks();
+      }
+    }, [isLoaded, isSignedIn])
   );
 
   const renderItem = ({ item }: { item: Task }) => {
     const isLate = new Date(item.dueDate) < new Date();
+
     return (
       <Card style={[styles.card, { backgroundColor: colors.backgroundSecondary }]}>
         <Card.Title
@@ -78,6 +84,14 @@ export default function TasksScreen() {
     );
   };
 
+  if (!isLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator animating color={colors.primary} style={{ marginTop: 30 }} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerRow}>
@@ -96,7 +110,9 @@ export default function TasksScreen() {
       {loading ? (
         <ActivityIndicator animating color={colors.primary} />
       ) : tasks.length === 0 ? (
-        <Text style={[styles.noTasks, { color: colors.textPrimary }]}>No tienes tareas asignadas</Text>
+        <Text style={[styles.noTasks, { color: colors.textPrimary }]}>
+          No tienes tareas asignadas
+        </Text>
       ) : (
         <FlatList
           data={tasks}

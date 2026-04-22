@@ -8,11 +8,47 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API from '../../src/api/axios';
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  button: {
+    width: '80%',
+  },
+});
+
 export default function CompleteTaskScreen() {
   const { taskId } = useLocalSearchParams();
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const { getToken } = useAuth();
+
+  const { isLoaded, isSignedIn } = useAuth(); // 👈 SOLO esto
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -20,7 +56,7 @@ export default function CompleteTaskScreen() {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería para subir evidencias.');
+        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.');
       }
     })();
   }, []);
@@ -38,13 +74,19 @@ export default function CompleteTaskScreen() {
 
   const handleSubmit = async () => {
     if (!image) {
-      Alert.alert('Falta imagen', 'Por favor selecciona una imagen');
+      Alert.alert('Falta imagen', 'Selecciona una imagen');
+      return;
+    }
+
+    if (!isLoaded || !isSignedIn) {
+      Alert.alert('Error', 'Usuario no autenticado');
       return;
     }
 
     try {
       setUploading(true);
 
+      // 1️⃣ Subir imagen
       const formData = new FormData();
       formData.append('image', {
         uri: image,
@@ -53,20 +95,17 @@ export default function CompleteTaskScreen() {
       } as any);
 
       const uploadRes = await API.post('/upload', formData);
-
       const imageUrl = uploadRes.data.url;
 
-      const t = await getToken();
-      await API.post(
-        `/history/${taskId}/complete`,
-        { photoUrl: imageUrl },
-        { headers: { Authorization: `Bearer ${t}` } }
-      );
+      // 2️⃣ Marcar tarea como completada (SIN headers manuales)
+      await API.post(`/history/${taskId}/complete`, {
+        photoUrl: imageUrl,
+      });
 
       Alert.alert('✅ Tarea registrada');
       router.replace('/tasks');
     } catch (err) {
-      console.error(err);
+      console.error('Error al completar tarea:', err);
       Alert.alert('Error', 'No se pudo completar la tarea');
     } finally {
       setUploading(false);
@@ -114,35 +153,3 @@ export default function CompleteTaskScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: 8,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 48,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  button: {
-    marginVertical: 10,
-  },
-  image: {
-    width: '100%',
-    height: 250,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-});

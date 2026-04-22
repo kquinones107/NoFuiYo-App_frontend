@@ -1,35 +1,44 @@
-import React, { useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Text, TextInput, Button, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../../src/context/ThemeContext';
-import { AuthContext } from '../../src/context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+
+import { useTheme } from '../../src/context/ThemeContext';
 import API from '../../src/api/axios';
 
 export default function EditProfileScreen() {
-  const { token, user, setUser } = useContext(AuthContext);
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const { colors } = useTheme();
   const router = useRouter();
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+
+    setName(user.fullName || user.firstName || user.username || '');
+    setEmail(user.primaryEmailAddress?.emailAddress || '');
+  }, [isLoaded, user]);
+
   const handleUpdate = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
     if (!name.trim() || !email.trim()) {
       return Alert.alert('Campos requeridos', 'Nombre y correo no pueden estar vacíos.');
     }
 
     try {
       setLoading(true);
-      const res = await API.put(
-        '/auth/profile',
-        { name, email },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+
+      const res = await API.put('/auth/profile', { name, email });
 
       Alert.alert('Perfil actualizado');
-      setUser(res.data.user);
+      console.log('✅ Perfil actualizado:', res.data.user);
     } catch (err) {
       console.error('Error al actualizar perfil', err);
       Alert.alert('Error', 'No se pudo actualizar el perfil');
@@ -37,6 +46,16 @@ export default function EditProfileScreen() {
       setLoading(false);
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.form}>
+          <Text style={{ color: colors.textPrimary, textAlign: 'center' }}>Cargando perfil...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -72,6 +91,7 @@ export default function EditProfileScreen() {
           mode="contained"
           onPress={handleUpdate}
           loading={loading}
+          disabled={!isLoaded || !isSignedIn || loading}
           style={[styles.button, { backgroundColor: colors.primary }]}
         >
           Guardar Cambios

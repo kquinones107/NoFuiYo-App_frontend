@@ -9,13 +9,17 @@ import API from '../../src/api/axios';
 import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type Member = {
+  _id: string;
+  name: string;
+};
+
 export default function AssignTaskScreen() {
-  const { getToken } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
 
   const [name, setName] = useState('');
-  type Member = { _id: string; name: string };
   const [members, setMembers] = useState<Member[]>([]);
   const [assignedTo, setAssignedTo] = useState('');
   const [dueDate, setDueDate] = useState(new Date());
@@ -26,34 +30,41 @@ export default function AssignTaskScreen() {
 
   useEffect(() => {
     const fetchMembers = async () => {
+      if (!isLoaded || !isSignedIn) return;
+
       try {
-        const t = await getToken();
-        const res = await API.get('/home/members', {
-          headers: { Authorization: `Bearer ${t}` },
-        });
-        setMembers(res.data.members);
+        const res = await API.get('/home/members');
+
+        console.log('✅ Respuesta /home/members:', res.data);
+        console.log('👥 Miembros:', res.data.members);
+
+        setMembers(res.data.members ?? []);
       } catch (err) {
-        console.error('Error al cargar miembros del hogar', err);
+        console.error('❌ Error al cargar miembros del hogar', err);
         Alert.alert('Error', 'No se pudo cargar los miembros del hogar');
       }
     };
 
     fetchMembers();
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const assignTask = async () => {
+    if (!isLoaded || !isSignedIn) return;
+
     if (!name.trim() || !assignedTo) {
       return Alert.alert('Campos requeridos', 'Debes escribir un nombre y seleccionar responsable');
     }
 
     try {
       setLoading(true);
+
       const body: Record<string, unknown> = {
         name,
         assignedTo,
         dueDate: dueDate.toISOString(),
         frequency,
       };
+
       if (frequency === 'custom') {
         const n = parseInt(customIntervalDays, 10);
         if (!Number.isFinite(n) || n < 1 || n > 365) {
@@ -64,21 +75,19 @@ export default function AssignTaskScreen() {
         body.customIntervalDays = n;
       }
 
-      const t = await getToken();
-      await API.post('/tasks', body, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      await API.post('/tasks', body);
+
       Alert.alert('Tarea asignada exitosamente');
       router.replace('/tasks');
     } catch (err) {
-      console.error('Error al asignar tarea', err);
+      console.error('❌ Error al asignar tarea', err);
       Alert.alert('Error', 'No se pudo asignar la tarea');
     } finally {
       setLoading(false);
     }
   };
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
+  const onChangeDate = (_event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) setDueDate(selectedDate);
   };
@@ -108,22 +117,47 @@ export default function AssignTaskScreen() {
         />
 
         <Text style={[styles.label, { color: colors.textPrimary }]}>Asignar a</Text>
-        <View style={[styles.pickerWrapper, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+        <View
+          style={[
+            styles.pickerWrapper,
+            {
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.inputBorder,
+            },
+          ]}
+        >
           <Picker
             selectedValue={assignedTo}
-            onValueChange={setAssignedTo}
+            onValueChange={(value) => setAssignedTo(value)}
             style={{ color: colors.textPrimary }}
             dropdownIconColor={colors.textPrimary}
           >
-            <Picker.Item label="Selecciona un miembro" value="" color={colors.textSecondary} />
+            <Picker.Item
+              label={members.length === 0 ? 'No hay miembros disponibles' : 'Selecciona un miembro'}
+              value=""
+              color={colors.textSecondary}
+            />
             {members.map((m) => (
-              <Picker.Item key={m._id} label={m.name} value={m._id} color={colors.textPrimary} />
+              <Picker.Item
+                key={m._id}
+                label={m.name?.trim() ? m.name : 'Usuario sin nombre'}
+                value={m._id}
+                color={colors.textPrimary}
+              />
             ))}
           </Picker>
         </View>
 
         <Text style={[styles.label, { color: colors.textPrimary }]}>Recurrencia</Text>
-        <View style={[styles.pickerWrapper, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+        <View
+          style={[
+            styles.pickerWrapper,
+            {
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.inputBorder,
+            },
+          ]}
+        >
           <Picker
             selectedValue={frequency}
             onValueChange={(v) => setFrequency(v as typeof frequency)}
@@ -133,7 +167,11 @@ export default function AssignTaskScreen() {
             <Picker.Item label="Diaria" value="daily" color={colors.textPrimary} />
             <Picker.Item label="Semanal" value="weekly" color={colors.textPrimary} />
             <Picker.Item label="Mensual" value="monthly" color={colors.textPrimary} />
-            <Picker.Item label="Personalizada (cada N días)" value="custom" color={colors.textPrimary} />
+            <Picker.Item
+              label="Personalizada (cada N días)"
+              value="custom"
+              color={colors.textPrimary}
+            />
           </Picker>
         </View>
 
@@ -152,11 +190,7 @@ export default function AssignTaskScreen() {
         )}
 
         <Text style={[styles.label, { color: colors.textPrimary }]}>Fecha límite</Text>
-        <Button
-          mode="outlined"
-          onPress={() => setShowDatePicker(true)}
-          style={styles.dateButton}
-        >
+        <Button mode="outlined" onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
           {dueDate.toLocaleDateString()}
         </Button>
 

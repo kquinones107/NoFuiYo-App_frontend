@@ -1,48 +1,59 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Card, TextInput, Button, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { AuthContext } from '../../src/context/AuthContext';
+import { useAuth } from '@clerk/clerk-expo';
+
 import API from '../../src/api/axios';
 
+type SpecialDate = {
+  title: string;
+  date: string;
+};
+
 export default function SpecialDatesScreen() {
-  const { token } = useContext(AuthContext);
+  const { isLoaded, isSignedIn } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
-  type SpecialDate = { title: string; date: string };
+
   const [dates, setDates] = useState<SpecialDate[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
 
-  useEffect(() => {
-    const fetchDates = async () => {
-      try {
-        const res = await API.get('/dates', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setDates(res.data.dates);
-      } catch (err) {
-        console.error('Error al cargar fechas', err);
-        Alert.alert('Error', 'No se pudieron cargar las fechas especiales');
-      }
-    };
+  const fetchDates = async () => {
+    if (!isLoaded || !isSignedIn) return;
 
-    fetchDates();
-  }, []);
+    try {
+      const res = await API.get('/dates');
+      setDates(res.data.dates ?? []);
+    } catch (err) {
+      console.error('Error al cargar fechas', err);
+      Alert.alert('Error', 'No se pudieron cargar las fechas especiales');
+    }
+  };
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      fetchDates();
+    }
+  }, [isLoaded, isSignedIn]);
 
   const addDate = async () => {
+    if (!isLoaded || !isSignedIn) return;
     if (!newTitle.trim()) return;
+
     const iso = newDate.toISOString().split('T')[0];
+
     try {
-      const res = await API.post(
-        '/dates',
-        { title: newTitle, date: iso },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await API.post('/dates', {
+        title: newTitle,
+        date: iso,
+      });
+
       setDates([...dates, res.data.date]);
       setNewTitle('');
     } catch (err) {
@@ -50,6 +61,16 @@ export default function SpecialDatesScreen() {
       Alert.alert('Error', 'No se pudo guardar la nueva fecha');
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: colors.textPrimary }}>Cargando fechas especiales...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -92,7 +113,9 @@ export default function SpecialDatesScreen() {
           >
             Seleccionar fecha
           </Button>
-          <Text style={[styles.dateText, { color: colors.textPrimary }]}>{newDate.toDateString()}</Text>
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>
+            {newDate.toDateString()}
+          </Text>
         </View>
 
         {showPicker && (
@@ -100,7 +123,7 @@ export default function SpecialDatesScreen() {
             value={newDate}
             mode="date"
             display="default"
-            onChange={(e, selected) => {
+            onChange={(_e, selected) => {
               const currentDate = selected || newDate;
               setShowPicker(false);
               setNewDate(currentDate);
@@ -108,7 +131,12 @@ export default function SpecialDatesScreen() {
           />
         )}
 
-        <Button mode="contained" onPress={addDate} style={[styles.button, { backgroundColor: colors.primary }]}>
+        <Button
+          mode="contained"
+          onPress={addDate}
+          style={[styles.button, { backgroundColor: colors.primary }]}
+          disabled={!isLoaded || !isSignedIn}
+        >
           Agregar Fecha Especial
         </Button>
       </ScrollView>
@@ -120,6 +148,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerRow: {
     flexDirection: 'row',
