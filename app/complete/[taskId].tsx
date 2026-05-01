@@ -63,12 +63,15 @@ export default function CompleteTaskScreen() {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
+      allowsEditing: false,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      console.log('📸 Imagen seleccionada:', asset);
+      setImage(asset.uri);
     }
   };
 
@@ -87,14 +90,35 @@ export default function CompleteTaskScreen() {
       setUploading(true);
 
       // 1️⃣ Subir imagen
+     const fileName = image.split('/').pop() || `evidencia-${Date.now()}.jpg`;
+      const extension = fileName.split('.').pop()?.toLowerCase();
+
+      let mimeType = 'image/jpeg';
+
+      if (extension === 'png') mimeType = 'image/png';
+      if (extension === 'jpg' || extension === 'jpeg') mimeType = 'image/jpeg';
+      if (extension === 'webp') mimeType = 'image/webp';
+      if (extension === 'heic' || extension === 'heif') mimeType = 'image/heic';
+
+      const safeFileName =
+        extension && ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(extension)
+          ? fileName
+          : `evidencia-${Date.now()}.jpg`;
+
       const formData = new FormData();
+
       formData.append('image', {
         uri: image,
-        name: 'evidencia.jpg',
-        type: 'image/jpeg',
+        name: safeFileName,
+        type: mimeType,
       } as any);
 
-      const uploadRes = await API.post('/upload', formData);
+      const uploadRes = await API.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
       const imageUrl = uploadRes.data.url;
 
       // 2️⃣ Marcar tarea como completada (SIN headers manuales)
