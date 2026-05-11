@@ -10,8 +10,11 @@ import API from '../src/api/axios';
 import { useTheme } from '../src/context/ThemeContext';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { RecurringTasksWidget, type WidgetTask } from '../src/components/RecurringTasksWidget';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 
 const screenWidth = Dimensions.get('window').width;
+const WalkthroughableView = walkthroughable(View);
 
 type Home = {
   _id: string;
@@ -34,6 +37,8 @@ export default function HomeScreen() {
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
   const { user } = useUser();
+  const { start } = useCopilot();
+  const [tourChecked, setTourChecked] = useState(false);
 
   const handleCreateHome = () => {
     router.push('/home-setup');
@@ -87,6 +92,27 @@ export default function HomeScreen() {
       refreshTasks();
     }, [refreshTasks])
   );
+
+  useEffect(() => {
+    const checkHomeTour = async () => {
+      if (!isLoaded || !isSignedIn || loading ||tourChecked) return;
+
+      // 👇 TEMPORAL: borrar marca del tutorial para volver a probarlo
+      // await AsyncStorage.removeItem('hasSeenHomeTour');
+
+      const hasSeenTour = await AsyncStorage.getItem('hasSeenHomeTour');
+
+      if (!hasSeenTour) {
+        setTimeout(() => {
+          start();
+        }, 800); // Espera a que la pantalla se haya renderizado completamente
+        await AsyncStorage.setItem('hasSeenHomeTour', 'true');
+      }
+
+      setTourChecked(true);
+    };
+    checkHomeTour();
+  }, [isLoaded, isSignedIn, loading, start, tourChecked]);
 
 
   const chartData = {
@@ -174,12 +200,20 @@ export default function HomeScreen() {
             visible={menuVisible}
             onDismiss={closeMenu}
             anchor={
-              <IconButton
-                icon="dots-vertical"
-                size={24}
-                onPress={openMenu}
-                iconColor={colors.buttonText}
-              />
+              <CopilotStep
+                text="Desde aquí puedes abrir el menú para usar la ruleta, editar tu perfil, ver fechas especiales y cerrar sesión."
+                order={1}
+                name="menu-principal"
+              >
+                <WalkthroughableView>
+                  <IconButton
+                    icon="dots-vertical"
+                    size={24}
+                    onPress={openMenu}
+                    iconColor={colors.buttonText}
+                  />
+                </WalkthroughableView>
+              </CopilotStep>
             }
           >
             <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
@@ -204,29 +238,59 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.widgetSection}>
-          <Text style={[styles.widgetTitle, { color: colors.textPrimary }]}>Tareas recurrentes</Text>
-          <Text style={[styles.widgetSubtitle, { color: colors.textSecondary }]}>
-            Progreso circular hasta la próxima fecha límite. Toca una tarjeta para completarla.
-          </Text>
-          <RecurringTasksWidget tasks={tasks} colors={colors} />
-        </View>
+        <CopilotStep
+          text="Aquí verás tus tareas recurrentes y el progreso hacia su próxima fecha límite."
+          order={2}
+          name="tareas-recurrentes"
+        >
+          <WalkthroughableView style={styles.widgetSection}>
+            <Text style={[styles.widgetTitle, { color: colors.textPrimary }]}>Tareas recurrentes</Text>
+            <Text style={[styles.widgetSubtitle, { color: colors.textSecondary }]}>
+              Progreso circular hasta la próxima fecha límite. Toca una tarjeta para completarla.
+            </Text>
+            <RecurringTasksWidget tasks={tasks} colors={colors} />
+          </WalkthroughableView>
+        </CopilotStep>
 
         {homes.length < 5 && (
-          <Card style={[styles.createCard, { backgroundColor: colors.cardBackground, borderColor: colors.primary }]} onPress={handleCreateHome} elevation={2}>
-            <Card.Content style={styles.createCardContent}>
-              <Text variant="headlineSmall" style={[styles.createCardTitle, { color: colors.primary }]}>
-                ➕ Crear nuevo hogar
-              </Text>
-              <Text variant="bodyMedium" style={[styles.createCardSubtitle, { color: colors.textSecondary }]}>
-                Establece un nuevo hogar para tu familia
-              </Text>
-            </Card.Content>
-          </Card>
+          <CopilotStep
+            text="Aquí puedes crear un nuevo hogar para invitar miembros y empezar a organizar tareas, o unirte a un hogar existente con un código de invitación."
+            order={3}
+            name="crear-hogar"
+          >
+            <WalkthroughableView>
+              <Card
+                style={[
+                  styles.createCard,
+                  { backgroundColor: colors.cardBackground, borderColor: colors.primary },
+                ]}
+                onPress={handleCreateHome}
+                elevation={2}
+              >
+                <Card.Content style={styles.createCardContent}>
+                  <Text variant="headlineSmall" style={[styles.createCardTitle, { color: colors.primary }]}>
+                    ➕ Crear nuevo hogar
+                  </Text>
+                  <Text variant="bodyMedium" style={[styles.createCardSubtitle, { color: colors.textSecondary }]}>
+                    Establece un nuevo hogar para tu familia
+                  </Text>
+                </Card.Content>
+              </Card>
+            </WalkthroughableView>
+          </CopilotStep>
         )}
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Tus hogares activos</Text>
+          <CopilotStep
+            text="Aquí aparecen tus hogares activos. Desde cada hogar puedes ver tareas, historial y detalles."
+            order={4}
+            name="hogares-activos"
+          >
+            <WalkthroughableView>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Tus hogares activos</Text>
+            </WalkthroughableView>
+          </CopilotStep>
+
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             Gestiona y organiza las tareas de tu hogar
           </Text>
@@ -240,7 +304,16 @@ export default function HomeScreen() {
           />
         </View>
         <View style={styles.statsSection}>
-          <Text style={[styles.statsTitle, { color: colors.textPrimary }]}>📊 Estadísticas del Mes</Text>
+          <CopilotStep
+            text="Aquí verás el rendimiento mensual, tareas completadas, tareas tardías y el integrante destacado."
+            order={5}
+            name="estadisticas-mes"
+          >
+            <WalkthroughableView>
+              <Text style={[styles.statsTitle, { color: colors.textPrimary }]}>📊 Estadísticas del Mes</Text>
+            </WalkthroughableView>
+          </CopilotStep>
+
           <Text style={[styles.statsSubtitle, { color: colors.textSecondary }]}>
             Rendimiento y logros de tu equipo
           </Text>

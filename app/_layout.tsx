@@ -12,6 +12,8 @@ import * as SecureStore from "expo-secure-store";
 import { setAuthTokenGetter } from "../src/api/axios";
 import { useEffect } from "react";
 
+import { CopilotProvider } from 'react-native-copilot';
+
 /** First screen on cold start (sign-in). Signed-in users are redirected from login → home. */
 export const unstable_settings = {
   initialRouteName: "login",
@@ -146,7 +148,9 @@ export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
       <ThemeProvider>
-        <AppContent />
+        <CopilotProvider>
+          <AppContent />
+        </CopilotProvider>
       </ThemeProvider>
     </ClerkProvider>
   );
