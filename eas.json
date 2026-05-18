@@ -16,6 +16,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "wdospinal@gmail.com",
+        "ascAppId": "6770578694",
+        "bundleIdentifier": "com.zanacode.nofuiyo"
+      }
+    }
   }
 }

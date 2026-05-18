@@ -10,9 +10,12 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.zanacode.NoFuiYoApp",
+      "bundleIdentifier": "com.zanacode.nofuiyo",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.associated-domains": ["applinks:natural-lionfish-20.clerk.accounts.dev"]
       }
     },
     "android": {
