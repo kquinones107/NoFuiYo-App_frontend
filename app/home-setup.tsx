@@ -20,13 +20,13 @@ export default function HomeSetupScreen() {
   const [loading, setLoading] = useState(false);
 
   const createHome = async () => {
-    if (!name.trim()) return Alert.alert('Nombre requerido', 'Escribe un nombre para el hogar');
+    if (!name.trim()) {
+      return Alert.alert('Nombre requerido', 'Escribe un nombre para el hogar');
+    }
+
     if (!isLoaded) return;
 
-    console.log('[HomeSetup] isLoaded:', isLoaded);
     const sessionToken = await getToken();
-    console.log('[HomeSetup] sessionToken present:', !!sessionToken);
-    console.log('[HomeSetup] sessionToken preview:', sessionToken ? sessionToken.slice(0, 30) + '...' : 'NULL');
 
     if (!sessionToken) {
       return Alert.alert('Sesión', 'No hay sesión activa. Cierra sesión e inicia de nuevo.');
@@ -34,9 +34,11 @@ export default function HomeSetupScreen() {
 
     try {
       setLoading(true);
-      console.log('[HomeSetup] POSTing /home/create with name:', name);
+
       const res = await API.post('/home/create', { name });
+
       console.log('[HomeSetup] ✅ createHome success:', JSON.stringify(res.data));
+
       Alert.alert('✅ Hogar creado correctamente');
       router.replace('/home');
     } catch (err: any) {
@@ -44,27 +46,48 @@ export default function HomeSetupScreen() {
       console.log('[HomeSetup] status:', err?.response?.status);
       console.log('[HomeSetup] data:', JSON.stringify(err?.response?.data));
       console.log('[HomeSetup] message:', err?.message);
-      Alert.alert('Error', `No se pudo crear el hogar\n${err?.response?.data?.message ?? err?.message}`);
+
+      Alert.alert(
+        'Aviso',
+        err?.response?.data?.message || 'No se pudo completar la acción'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const joinHome = async () => {
-    if (!code.trim()) return Alert.alert('Código requerido', 'Ingresa un código de hogar');
+    if (!code.trim()) {
+      return Alert.alert('Código requerido', 'Ingresa un código de hogar');
+    }
+
     if (!isLoaded) return;
+
     const sessionToken = await getToken();
+
     if (!sessionToken) {
       return Alert.alert('Sesión', 'No hay sesión activa. Cierra sesión e inicia de nuevo.');
     }
+
     try {
       setLoading(true);
-      await API.post(`/home/join/${encodeURIComponent(code.trim())}`, {});
+
+      const res = await API.post(`/home/join/${encodeURIComponent(code.trim())}`, {});
+
+      console.log('[HomeSetup] ✅ joinHome success:', JSON.stringify(res.data));
+
       Alert.alert('✅ Te uniste al hogar correctamente');
       router.replace('/home');
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'No se pudo unir al hogar');
+    } catch (err: any) {
+      console.log('[HomeSetup] ❌ joinHome failed');
+      console.log('[HomeSetup] status:', err?.response?.status);
+      console.log('[HomeSetup] data:', JSON.stringify(err?.response?.data));
+      console.log('[HomeSetup] message:', err?.message);
+
+      Alert.alert(
+        'Aviso',
+        err?.response?.data?.message || 'No se pudo completar la acción'
+      );
     } finally {
       setLoading(false);
     }

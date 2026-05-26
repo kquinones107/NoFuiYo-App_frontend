@@ -13,8 +13,8 @@ const { width } = Dimensions.get('window');
 
 interface HistoryItem {
   _id: string;
-  task: { name: string };
-  doneBy: { name: string };
+  task: { name: string } | null;
+  doneBy: { name: string } | null;
   doneAt: string;
   photoUrl: string;
   createdAt: string;
@@ -36,7 +36,7 @@ export default function HistoryScreen() {
     try {
       setLoading(true);
       const res = await API.get('/history');
-      setHistory(res.data.history ?? []);
+      setHistory((res.data.history ?? []).filter((item: HistoryItem) => item.task));
     } catch (err) {
       console.error('Error al cargar historial', err);
     } finally {
@@ -65,9 +65,9 @@ export default function HistoryScreen() {
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <Card style={[styles.card, { backgroundColor: colors.backgroundSecondary }]} elevation={2}>
       <Card.Title
-        title={item.task.name}
+        title={item.task?.name || 'Tarea eliminada'}
         titleStyle={[styles.taskTitle, { color: colors.textPrimary }]}
-        subtitle={`Hecha por: ${item.doneBy.name} el ${formatDate(item.doneAt)}`}
+        subtitle={`Hecha por: ${item.doneBy?.name || 'Usuario eliminado'} el ${formatDate(item.doneAt)}`}
         subtitleStyle={[styles.taskSubtitle, { color: colors.textSecondary }]}
         left={(props) => (
           <Avatar.Icon

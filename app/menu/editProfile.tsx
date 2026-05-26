@@ -9,7 +9,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import API from '../../src/api/axios';
 
 export default function EditProfileScreen() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, signOut } = useAuth();
   const { user } = useUser();
   const { colors } = useTheme();
   const router = useRouter();
@@ -17,6 +17,7 @@ export default function EditProfileScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!isLoaded || !user) return;
@@ -46,6 +47,50 @@ export default function EditProfileScreen() {
       setLoading(false);
     }
   };
+
+  const deleteAccount = async () => {
+  if (!isLoaded || !isSignedIn) return;
+
+  try {
+    setDeleting(true);
+
+    await API.delete('/auth/delete-account');
+
+    Alert.alert(
+      'Cuenta eliminada',
+      'Tu cuenta fue eliminada correctamente.',
+      [
+        {
+          text: 'OK',
+          onPress: async () => {
+            await signOut();
+            router.replace('/login');
+          },
+        },
+      ]
+    );
+  } catch (err) {
+    console.error('Error al eliminar cuenta', err);
+    Alert.alert('Error', 'No se pudo eliminar la cuenta');
+  } finally {
+    setDeleting(false);
+  }
+};
+
+const confirmDeleteAccount = () => {
+  Alert.alert(
+    'Eliminar cuenta',
+    'Esta acción eliminará tu cuenta y no se puede deshacer. ¿Estás seguro?',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: deleteAccount,
+      },
+    ]
+  );
+};
 
   if (!isLoaded) {
     return (
@@ -96,6 +141,17 @@ export default function EditProfileScreen() {
         >
           Guardar Cambios
         </Button>
+
+        <Button
+          mode="outlined"
+          onPress={confirmDeleteAccount}
+          loading={deleting}
+          disabled={deleting}
+          textColor={colors.error ?? '#EF4444'}
+          style={[styles.deleteButton, { borderColor: colors.error ?? '#EF4444' }]}
+        >
+          Eliminar cuenta
+        </Button>
       </View>
     </SafeAreaView>
   );
@@ -128,4 +184,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {},
+  deleteButton: {
+  marginTop: 16,
+  borderWidth: 1.5,
+},
 });

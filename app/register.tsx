@@ -45,6 +45,7 @@ export default function RegisterScreen() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
@@ -183,11 +184,17 @@ export default function RegisterScreen() {
                   label="Contraseña"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   mode="outlined"
                   style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   autoComplete="password"
                   left={<TextInput.Icon icon="lock" />}
+                  right={
+                    <TextInput.Icon
+                      icon={showPassword ? 'eye-off' : 'eye'}
+                      onPress={() => setShowPassword(!showPassword)}
+                    />
+                  }
                 />
 
                 <View style={styles.rememberMeContainer}>

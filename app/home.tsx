@@ -252,7 +252,7 @@ export default function HomeScreen() {
           </WalkthroughableView>
         </CopilotStep>
 
-        {homes.length < 5 && (
+        {homes.length === 0 && (
           <CopilotStep
             text="Aquí puedes crear un nuevo hogar para invitar miembros y empezar a organizar tareas, o unirte a un hogar existente con un código de invitación."
             order={3}

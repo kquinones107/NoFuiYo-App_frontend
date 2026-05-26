@@ -68,6 +68,8 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [showPassword, setShowPassword] = useState(false);
+
   React.useEffect(() => {
     (async () => {
       const saved = await loadCredentials();
@@ -288,11 +290,17 @@ export default function LoginScreen() {
                   label="Contraseña"
                   value={password}
                   onChangeText={setPassword}
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   mode="outlined"
                   style={[styles.input, { backgroundColor: colors.inputBackground }]}
                   autoComplete="password"
                   left={<TextInput.Icon icon="lock" />}
+                  right={
+                    <TextInput.Icon
+                      icon={showPassword ? 'eye-off' : 'eye'}
+                      onPress={() => setShowPassword(!showPassword)}
+                    />
+                  }
                 />
 
                 <View style={styles.rememberMeContainer}>
@@ -319,6 +327,10 @@ export default function LoginScreen() {
                 >
                   {isLoading ? 'Entrando...' : 'Iniciar Sesión'}
                 </Button>
+                  
+                  <Text style={[styles.registerNotice, { color: colors.textSecondary }]}>
+                    ¿No tienes una cuenta en NoFuiYo App? Crea una cuenta nueva para empezar a organizar tu hogar.
+                  </Text>
 
                 <View style={styles.divider}>
                   <View style={[styles.dividerLine, { backgroundColor: colors.gray300 }]} />
@@ -431,4 +443,11 @@ const styles = StyleSheet.create({
   footer: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 20 },
   footerText: { textAlign: 'center', fontSize: 14 },
   footerLink: { fontWeight: '600' },
+  registerNotice: {
+  textAlign: 'center',
+  fontSize: 14,
+  marginTop: 16,
+  marginBottom: 4,
+  lineHeight: 20,
+},
 });
