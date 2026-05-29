@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter} from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Dimensions, FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { ActivityIndicator, Avatar, Button, Card, Chip, IconButton, Menu, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { RecurringTasksWidget, type WidgetTask } from '../src/components/Recurri
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 
-const screenWidth = Dimensions.get('window').width;
+//const screenWidth = Dimensions.get('window').width;
 const WalkthroughableView = walkthroughable(View);
 
 type Home = {
@@ -27,6 +27,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const {  isSignedIn, isLoaded , signOut } = useAuth();
   const { colors, toggleTheme, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+
+  const isTablet = width >= 768;
+  const contentMaxWidth = isTablet ? 720 : undefined;
+  const chartWidth = isTablet ? 640 : width - 60;
+
   type Stat = { name: string; points: number; completed: number; late: number };
   const [stats, setStats] = useState<Stat[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
@@ -146,7 +152,7 @@ export default function HomeScreen() {
           />
         </View>
         
-        <View style={styles.homeActions}>
+        <View style={[styles.homeActions, !isTablet && styles.mobileHomeActions]}>
           <Button 
             mode="contained" 
             onPress={() => router.push(`/tasks?homeId=${item._id}`)}
@@ -186,7 +192,12 @@ export default function HomeScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-        <View style={styles.headerContent}>
+        <View
+          style={[
+            styles.headerContent,
+            isTablet && styles.tabletCenteredContent,
+          ]}
+        >
           <View style={styles.greetingContainer}>
             <Text variant="headlineMedium" style={styles.greeting}>
               ¡Hola {user?.firstName || user?.username || 'Usuario'}! 👋
@@ -233,17 +244,25 @@ export default function HomeScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && styles.tabletScrollContent,
+        ]}
       >
         <CopilotStep
           text="Aquí verás tus tareas recurrentes y el progreso hacia su próxima fecha límite."
           order={2}
           name="tareas-recurrentes"
         >
-          <WalkthroughableView style={styles.widgetSection}>
+          <WalkthroughableView
+            style={[
+              styles.widgetSection,
+              isTablet && styles.tabletSection,
+            ]}
+          >
             <Text style={[styles.widgetTitle, { color: colors.textPrimary }]}>Tareas recurrentes</Text>
             <Text style={[styles.widgetSubtitle, { color: colors.textSecondary }]}>
               Progreso circular hasta la próxima fecha límite. Toca una tarjeta para completarla.
@@ -262,6 +281,7 @@ export default function HomeScreen() {
               <Card
                 style={[
                   styles.createCard,
+                  isTablet && styles.tabletSection,
                   { backgroundColor: colors.cardBackground, borderColor: colors.primary },
                 ]}
                 onPress={handleCreateHome}
@@ -280,7 +300,7 @@ export default function HomeScreen() {
           </CopilotStep>
         )}
 
-        <View style={styles.section}>
+        <View style={[styles.section, isTablet && styles.tabletSection]}>
           <CopilotStep
             text="Aquí aparecen tus hogares activos. Desde cada hogar puedes ver tareas, historial y detalles."
             order={4}
@@ -303,7 +323,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.homesList}
           />
         </View>
-        <View style={styles.statsSection}>
+        <View style={[styles.statsSection, isTablet && styles.tabletSection]}>
           <CopilotStep
             text="Aquí verás el rendimiento mensual, tareas completadas, tareas tardías y el integrante destacado."
             order={5}
@@ -350,7 +370,7 @@ export default function HomeScreen() {
                 <Card.Content>
                   <BarChart
                     data={chartData}
-                    width={screenWidth - 60}
+                    width={chartWidth}
                     height={220}
                     yAxisLabel=""
                     yAxisSuffix=""
@@ -515,6 +535,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  mobileHomeActions: {
+    flexDirection: 'row',
+  },
   actionButton: {
     flex: 1,
     borderRadius: 12,
@@ -620,4 +643,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
+  tabletCenteredContent: {
+  width: '100%',
+  maxWidth: 720,
+  alignSelf: 'center',
+},
+
+tabletScrollContent: {
+  alignItems: 'center',
+},
+
+tabletSection: {
+  width: '100%',
+  maxWidth: 720,
+  alignSelf: 'center',
+},
 });
