@@ -12,7 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.zanacode.nofuiyo",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Usamos tu galería para que puedas seleccionar una imagen como evidencia al completar una tarea del hogar. Por ejemplo, puedes subir una foto de la cocina limpia después de terminar la tarea.",
+        "NSCameraUsageDescription": "Usamos la cámara para que puedas tomar una foto como evidencia al completar una tarea del hogar. Por ejemplo, puedes tomar una foto de la cocina limpia después de terminar la tarea."
       },
       "entitlements": {
         "com.apple.developer.associated-domains": ["applinks:natural-lionfish-20.clerk.accounts.dev"]

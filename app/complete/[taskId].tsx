@@ -56,7 +56,10 @@ export default function CompleteTaskScreen() {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos necesarios', 'Necesitamos acceso a tu galería.');
+        Alert.alert(
+          'Permiso para acceder a tus fotos',
+          'Usamos tu galería para que puedas seleccionar una imagen como evidencia al completar una tarea del hogar. Por ejemplo, puedes subir una foto de la cocina limpia después de terminar la tarea.'
+        );
       }
     })();
   }, []);
