@@ -227,6 +227,8 @@ export default function HomeScreen() {
               </CopilotStep>
             }
           >
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/gossip');}} title="🔥 Chismecito NoFuiYo"/>
+            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/neighbors'); }} title="🏘️ Hogares vecinos" />
             <Menu.Item onPress={() => {closeMenu(); router.push('/menu/rulette'); }} title="🎡 Ruleta" />
             <Menu.Item onPress={() => {closeMenu(); router.push('/menu/editProfile'); }} title="✏️ Editar perfil" />
             <Menu.Item onPress={() => {closeMenu(); toggleTheme(); }} title={isDark ? "☀️ Modo claro" : "🌙 Modo oscuro"} />
