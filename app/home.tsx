@@ -235,7 +235,6 @@ export default function HomeScreen() {
             <Menu.Item onPress={() => {closeMenu(); toggleTheme(); }} title={isDark ? "☀️ Modo claro" : "🌙 Modo oscuro"} />
             <Menu.Item onPress={() => {closeMenu(); router.push('/menu/aboutApp'); }} title="📄 Acerca de la app" />
             <Menu.Item onPress={() => {closeMenu(); router.push('/menu/privacyPolicy');}} title="🔒 Políticas de privacidad" />
-            <Menu.Item onPress={() => {closeMenu(); router.push('/menu/specialDate');}} title="🎉 Fechas especiales" />
             <Menu.Item
              onPress={() => {
              closeMenu();
