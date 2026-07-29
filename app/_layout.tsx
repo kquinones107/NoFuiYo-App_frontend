@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   if (!publishableKey) {
     return <MissingKeyScreen />;
   }
@@ -155,3 +155,5 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

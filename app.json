@@ -2,7 +2,7 @@
   "expo": {
     "name": "NoFuiYoApp",
     "slug": "NoFuiYoApp",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "scheme": "frontend",
@@ -17,7 +17,9 @@
         "NSCameraUsageDescription": "Usamos la cámara para que puedas tomar una foto como evidencia al completar una tarea del hogar. Por ejemplo, puedes tomar una foto de la cocina limpia después de terminar la tarea."
       },
       "entitlements": {
-        "com.apple.developer.associated-domains": ["applinks:natural-lionfish-20.clerk.accounts.dev"]
+        "com.apple.developer.associated-domains": [
+          "applinks:natural-lionfish-20.clerk.accounts.dev"
+        ]
       }
     },
     "android": {
@@ -26,7 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "versionCode": 2,
+      "versionCode": 3,
       "package": "com.zanacode.NoFuiYoApp"
     },
     "web": {
