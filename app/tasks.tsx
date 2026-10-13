@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { Text, Card, Button, ActivityIndicator, Avatar, IconButton } from 'react-native-paper';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 
 import API from '../src/api/axios';
