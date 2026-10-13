@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import * as Updates from 'expo-updates';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider as PaperProvider } from 'react-native-paper';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -19,8 +20,13 @@ export const unstable_settings = {
   initialRouteName: "login",
 };
 
+// Only report from production builds (EAS "production" channel); dev, preview and local builds stay silent.
+const isProductionBuild = !__DEV__ && Updates.channel === 'production';
+
 Sentry.init({
   dsn: 'https://e2e4a7ed88a5d6c83f3e3f8c1ed2c1b9@o4505704020377600.ingest.us.sentry.io/4510864849764352',
+  enabled: isProductionBuild,
+  environment: isProductionBuild ? 'production' : __DEV__ ? 'development' : (Updates.channel ?? 'preview'),
   sendDefaultPii: true,
   enableLogs: true,
   replaysSessionSampleRate: 0.1,
@@ -133,7 +139,7 @@ const styles = StyleSheet.create({
     color: '#7dd3fc',
   },
   loading: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#0f0f0f',

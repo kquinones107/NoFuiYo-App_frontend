@@ -80,6 +80,7 @@ export default function LoginScreen() {
   }, []);
 
   const finishLogin = async (createdSessionId: string) => {
+    if (!setActive) return;
     await setActive({ session: createdSessionId });
 
     if (rememberMe) {
