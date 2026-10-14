@@ -21,7 +21,8 @@
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_bmF0dXJhbC1saW9uZmlzaC0yMC5jbGVyay5hY2NvdW50cy5kZXYk"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_bmF0dXJhbC1saW9uZmlzaC0yMC5jbGVyay5hY2NvdW50cy5kZXYk",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },
